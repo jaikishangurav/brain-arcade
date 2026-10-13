@@ -14,7 +14,9 @@
   .hud { margin-left:auto; display:flex; gap:14px; align-items:center; font-size:16px; }
   .fuel span { display:inline-block; width:22px; height:14px; margin-left:3px; border-radius:3px; background:#2a3260; vertical-align:middle; }
   .fuel span.on { background:var(--good); }
-  #map { display:flex; gap:8px; overflow-x:auto; padding:10px 0; }
+  .row { display:flex; gap:8px; overflow-x:auto; padding:6px 0 10px; }
+  .rowlabel { margin-top:2px; }
+  .sub { color:var(--muted); font-size:11px; }
   .pbtn { flex:0 0 auto; background:var(--panel); color:var(--ink); border:2px solid transparent; border-radius:12px; padding:6px 10px; cursor:pointer; text-align:center; min-width:82px; font-size:13px; }
   .pbtn:disabled { cursor:default; opacity:.55; }
   .pbtn.here { border-color:var(--accent); opacity:1; }
@@ -50,7 +52,9 @@
       <div class="fuel">Fuel <span id="f0"></span><span id="f1"></span><span id="f2"></span></div>
     </div>
   </header>
-  <div id="map"></div>
+  <div id="map" class="row"></div>
+  <div class="muted rowlabel">🌙 Bonus worlds: moons &amp; dwarf planets</div>
+  <div id="bonus" class="row"></div>
   <div id="stage">
     <canvas id="cv" width="800" height="450"></canvas>
     <div id="overlay"><div class="box" id="box"></div></div>
@@ -90,7 +94,26 @@ const PLANETS = [
   { id:"Neptune", color:"#3b5fd6", fact:"Neptune is the farthest planet from the Sun and has the fastest winds in the solar system, over 1,000 miles per hour!",
     qs:[ {q:"Which planet is farthest from the Sun?", a:["Neptune","Uranus","Saturn","Jupiter"], e:"Neptune is the eighth and farthest planet."},
          {q:"Which planet has the fastest winds in the solar system?", a:["Neptune","Earth","Venus","Mars"], e:"Neptune's winds can reach over 1,000 miles per hour."} ] },
+  // ---- bonus worlds (indices 8+). `pos` is where they sit on the route, so flight times make sense ----
+  { id:"Moon", sub:"Earth's moon", pos:2.3, color:"#b8b8bd", fact:"The Moon is Earth's only natural moon. Its gravity is about 1/6 of Earth's, and with no wind or rain, astronaut footprints stay there for a very long time.",
+    qs:[ {q:"About how long does the Moon take to orbit Earth?", a:["About a month","About a day","About a week","About a year"], e:"The Moon circles Earth roughly every 27 to 29 days. That is where the word \"month\" comes from."},
+         {q:"The large dark plains you can see on the Moon are called…", a:["Maria, which means seas","Oceans","Forests","Cloud shadows"], e:"Early astronomers thought they were seas. They are really ancient plains of cooled lava."},
+         {q:"How strong is the Moon's gravity compared with Earth's?", a:["About 1/6","The same","Twice as strong","There is none"], e:"On the Moon you would weigh only about one sixth of what you weigh on Earth."} ] },
+  { id:"Ceres", sub:"Dwarf planet", pos:3.5, color:"#8e8a84", fact:"Ceres is the biggest object in the asteroid belt and a dwarf planet. The Dawn spacecraft found mysterious bright spots on it made of salty minerals.",
+    qs:[ {q:"Ceres is a dwarf planet found in…", a:["The asteroid belt","The rings of Saturn","The far edge of the solar system","The Moon's orbit"], e:"Ceres lives in the asteroid belt between Mars and Jupiter."},
+         {q:"What did the Dawn spacecraft find shining on Ceres?", a:["Bright salty spots","Gold mines","Alien lights","Frozen lakes of lava"], e:"The bright spots in Occator crater are deposits of salts left behind when salty water froze and dried."} ] },
+  { id:"Europa", sub:"Moon of Jupiter", pos:4.3, color:"#e6e2d5", fact:"Europa is an icy moon of Jupiter. Under its frozen crust there may be a huge salty ocean, one of the best places to look for life beyond Earth.",
+    qs:[ {q:"Europa is a moon of which planet?", a:["Jupiter","Saturn","Mars","Neptune"], e:"Europa is one of Jupiter's four biggest moons."},
+         {q:"What may be hiding under Europa's icy shell?", a:["A huge salty ocean","A sea of lava","A forest","Nothing at all"], e:"Scientists think Europa holds more liquid water than all of Earth's oceans combined."} ] },
+  { id:"Titan", sub:"Moon of Saturn", pos:5.3, color:"#d98f3c", fact:"Titan is Saturn's biggest moon. It has a thick orange haze and lakes and rivers of liquid methane and ethane. It is the only moon with a thick atmosphere.",
+    qs:[ {q:"Titan is the biggest moon of which planet?", a:["Saturn","Jupiter","Uranus","Mars"], e:"Titan orbits Saturn and is bigger than the planet Mercury."},
+         {q:"What fills the lakes on Titan?", a:["Liquid methane and ethane","Water","Lava","Orange juice"], e:"It is so cold on Titan that gases like methane turn into liquid and form lakes."} ] },
+  { id:"Pluto", sub:"Dwarf planet", pos:7.8, color:"#c9a98a", fact:"Pluto is a dwarf planet far beyond Neptune. It has a giant heart-shaped glacier, and the New Horizons spacecraft flew past it in 2015.",
+    qs:[ {q:"What kind of world is Pluto?", a:["A dwarf planet","A star","A comet","A giant planet"], e:"In 2006 astronomers decided Pluto is a dwarf planet because it is small and shares its orbit with other icy objects."},
+         {q:"Which NASA spacecraft flew past Pluto in 2015?", a:["New Horizons","Voyager 1","Apollo 11","Perseverance"], e:"New Horizons travelled for nine years to reach Pluto and sent back amazing photos."} ] },
 ];
+const MAIN_COUNT = 8;                       // Mercury..Neptune; everything after is a bonus world
+const posOf = i => PLANETS[i].pos ?? i;
 const GENERAL = [
   {q:"What is at the centre of our solar system?", a:["The Sun","The Moon","Jupiter","A black hole"], e:"The Sun is a star, and everything else orbits around it."},
   {q:"How many planets are in our solar system?", a:["8","7","9","10"], e:"There are eight planets, from Mercury to Neptune."},
@@ -133,27 +156,28 @@ function renderHud() {
   for (let i=0;i<3;i++) $("f"+i).className = i < fuel ? "on" : "";
 }
 function renderMap() {
-  const m = $("map"); m.innerHTML = "";
+  $("map").innerHTML = ""; $("bonus").innerHTML = "";
   PLANETS.forEach((p,i) => {
     const b = document.createElement("button");
     b.className = "pbtn" + (i===here ? " here" : "");
     b.disabled = mode !== "idle" || i === here;
     const visited = saved.visited.includes(i);
-    b.innerHTML = `<div class="orb${p.ring?" ring":""}" style="background:radial-gradient(circle at 35% 30%, ${p.color}, ${p.color} 55%, #222)"></div>${p.id}${i===here?" 📍":""}${visited?' <span class="stamp">✔</span>':""}`;
+    b.innerHTML = `<div class="orb${p.ring?" ring":""}" style="background:radial-gradient(circle at 35% 30%, ${p.color}, ${p.color} 55%, #222)"></div>${p.id}${i===here?" 📍":""}${visited?' <span class="stamp">✔</span>':""}${p.sub?`<div class="sub">${p.sub}</div>`:""}`;
     b.onclick = () => beginTrip(i);
-    m.appendChild(b);
+    $(i < MAIN_COUNT ? "map" : "bonus").appendChild(b);
   });
 }
+const countVisited = (from, to) => saved.visited.filter(i => i >= from && i < to).length;
 function renderLog() {
   $("log").innerHTML = "";
   PLANETS.forEach((p,i) => {
     const li = document.createElement("li");
     const v = saved.visited.includes(i);
     li.className = v ? "found" : "";
-    li.textContent = v ? `🪐 ${p.id}: ${p.fact}` : `❓ ${p.id}: visit to discover`;
+    li.textContent = v ? `${i < MAIN_COUNT ? "🪐" : "🌙"} ${p.id}: ${p.fact}` : `❓ ${p.id}: visit to discover`;
     $("log").appendChild(li);
   });
-  $("tour").textContent = `(${saved.visited.length}/8 planets visited · best score ${saved.best})`;
+  $("tour").textContent = `(${countVisited(0, MAIN_COUNT)}/${MAIN_COUNT} planets · ${countVisited(MAIN_COUNT, PLANETS.length)}/${PLANETS.length - MAIN_COUNT} bonus worlds · best score ${saved.best})`;
 }
 function showBox(html) { $("box").innerHTML = html; $("overlay").style.display = "flex"; }
 function hideBox() { $("overlay").style.display = "none"; }
@@ -207,7 +231,7 @@ function beginTrip(dest) {
 }
 function startFlight(dest) {
   hideBox();
-  const steps = Math.abs(dest - here);
+  const steps = Math.max(1, Math.round(Math.abs(posOf(dest) - posOf(here))));
   flight = { dest, steps, t:0, dur:Math.min(34, 12 + 4*steps), objs:[], spawn:0.5, starT:1, hitCd:0, paused:false };
   rocket.x = rocket.tx = 130; rocket.y = rocket.ty = H/2;
   mode = "flight";
@@ -225,14 +249,18 @@ function land() {
   const dest = flight.dest; const p = PLANETS[dest];
   mode = "idle"; here = dest; flight = null;
   const firstTime = !saved.visited.includes(dest);
+  const mainBefore = countVisited(0, MAIN_COUNT), bonusBefore = countVisited(MAIN_COUNT, PLANETS.length);
   if (firstTime) saved.visited.push(dest);
   score += 100;
   if (score > saved.best) saved.best = score;
   persist(); renderHud(); renderMap(); renderLog();
-  const won = saved.visited.length === PLANETS.length;
-  showBox(`<h2>🎉 Landed on ${p.id}!</h2><p>${p.fact}</p><p class="muted">+100 points ${firstTime ? "· new planet added to your logbook!" : ""}</p>
-    ${won ? `<h2>🏆 Grand Tour complete!</h2><p>You visited all 8 planets. Final score ${score}.</p>` : ""}
-    <button class="go" id="ok">${won ? "Keep exploring" : "Pick the next planet"}</button>`);
+  const grand = mainBefore < MAIN_COUNT && countVisited(0, MAIN_COUNT) === MAIN_COUNT;
+  const deep = bonusBefore < PLANETS.length - MAIN_COUNT && countVisited(MAIN_COUNT, PLANETS.length) === PLANETS.length - MAIN_COUNT;
+  const won = grand || deep;
+  showBox(`<h2>🎉 Landed on ${p.id}!</h2><p>${p.fact}</p><p class="muted">+100 points ${firstTime ? "· added to your logbook!" : ""}</p>
+    ${grand ? `<h2>🏆 Grand Tour complete!</h2><p>You visited all 8 planets. Now try the bonus worlds!</p>` : ""}
+    ${deep ? `<h2>🌟 Deep Space Tour complete!</h2><p>You visited every moon and dwarf planet. Final score ${score}.</p>` : ""}
+    <button class="go" id="ok">${won ? "Keep exploring" : "Pick the next destination"}</button>`);
   $("ok").onclick = hideBox;
 }
 
