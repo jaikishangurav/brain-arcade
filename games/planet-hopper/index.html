@@ -74,6 +74,7 @@
   <div class="log"><h2>📖 Captain's logbook <span class="muted" id="tour"></span></h2><ul id="log"></ul></div>
 </div>
 
+<script src="../../profile.js"></script>
 <script>
 "use strict";
 const W = 800, H = 450;
@@ -169,6 +170,7 @@ function askSeries(qs, title, perCorrect, finish) {
 // ---------- trip flow ----------
 function beginTrip(dest) {
   mode = "quiz"; renderMap();
+  Profile.play("planet-hopper");
   fuel = 0; renderHud();
   const p = PLANETS[dest];
   showBox(`<h2>⛽ Refuel for ${p.id}</h2><p>Answer 3 questions. Each correct answer fills a tank of fuel. Asteroids burn fuel when they hit you, so fill up!</p><button class="go" id="st">Start refuelling</button>`);
@@ -207,6 +209,10 @@ function land() {
   const grand = mainBefore < MAIN_COUNT && countVisited(0, MAIN_COUNT) === MAIN_COUNT;
   const deep = bonusBefore < PLANETS.length - MAIN_COUNT && countVisited(MAIN_COUNT, PLANETS.length) === PLANETS.length - MAIN_COUNT;
   const won = grand || deep;
+  Profile.award("planet-hopper", firstTime ? 5 : 2, firstTime ? "New world: " + p.id : "Landed on " + p.id);
+  if (grand) { Profile.award("planet-hopper", 10, "Grand Tour complete!"); Profile.unlock("ph-grand-tour"); }
+  if (deep) { Profile.award("planet-hopper", 10, "Deep Space Tour complete!"); Profile.unlock("ph-deep-space"); }
+  if (p.id === "Pluto") Profile.unlock("ph-pluto");
   showBox(`<h2>🎉 Landed on ${p.id}!</h2><p>${p.fact}</p><p class="muted">+100 points ${firstTime ? "· added to your logbook!" : ""}</p>
     ${grand ? `<h2>🏆 Grand Tour complete!</h2><p>You visited all 8 planets. Now try the bonus worlds!</p>` : ""}
     ${deep ? `<h2>🌟 Deep Space Tour complete!</h2><p>You visited every moon and dwarf planet. Final score ${score}.</p>` : ""}
@@ -394,7 +400,9 @@ function showEditor(msg) {
     if (!v("ea")) return showEditor("Add the right answer first.");
     if (bad) return showEditor("Hmm: " + (bad === "needs at least 2 answers" ? "add at least one wrong answer too." : bad === "duplicate answers" ? "every answer should be different." : "write the question first.") );
     const list = loadCustom(); list.push(q);
-    showEditor(saveCustom(list) ? "✅ Added! It will show up on your next trip." : "Couldn't save in this browser.");
+    const saved = saveCustom(list);
+    if (saved) Profile.unlock("ph-question-maker");
+    showEditor(saved ? "✅ Added! It will show up on your next trip." : "Couldn't save in this browser.");
     rebuildPools();
   };
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const list = loadCustom(); list.splice(+b.dataset.del, 1); saveCustom(list); rebuildPools(); showEditor("Deleted."); });

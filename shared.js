@@ -56,6 +56,7 @@ const ARC = (() => {
         const cur = store.get(key, []), added = [], skipped = [];
         words.forEach(w => { const n = normalize(w); if (!valid.test(w)) skipped.push(w); else if (!cur.includes(n) && !added.includes(n)) added.push(n); });
         const ok = store.set(key, cur.concat(added));
+        if (ok && added.length && window.Profile) Profile.unlock("wordsmith");
         if (onChange) onChange();
         render((added.length ? `<span class="good">✅ Added ${added.length} word${added.length > 1 ? "s" : ""}!</span> ` : "") +
                (skipped.length ? `<span class="bad">Skipped: ${skipped.map(esc).join(", ")} (letters only, ${min} to ${max})</span>` : "") +

@@ -7,31 +7,182 @@
 <link rel="stylesheet" href="shared.css">
 <style>
   h1 { font-size:30px; margin:6px 0 2px; }
+  h2.sec { font-size:20px; margin:26px 0 8px; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px; margin-top:16px; }
-  a.game, .game.soon { display:block; background:var(--panel); border-radius:16px; padding:18px; color:var(--ink); text-decoration:none; border:2px solid transparent; }
+  a.game { display:block; background:var(--panel); border-radius:16px; padding:18px; color:var(--ink); text-decoration:none; border:2px solid transparent; }
   a.game:hover { border-color:var(--accent); transform:translateY(-2px); }
   .game .ic { font-size:44px; }
   .game h2 { margin:6px 0 4px; font-size:20px; }
   .game p { margin:0; color:var(--muted); font-size:14px; }
-  .tag { display:inline-block; margin-top:10px; font-size:12px; padding:3px 9px; border-radius:99px; background:var(--panel2); color:var(--accent); }
-  .soon { opacity:.55; }
-  .soon .tag { color:var(--muted); }
+  .tag { display:inline-block; margin:10px 6px 0 0; font-size:12px; padding:3px 9px; border-radius:99px; background:var(--panel2); color:var(--accent); }
+  .tag.stars { color:#fff; background:#3a2f7a; }
+
+  /* profile */
+  #profile { margin-top:14px; scroll-margin-top:12px; }
+  .pf-top { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .avatar { font-size:56px; line-height:1; background:var(--panel2); border-radius:50%; width:88px; height:88px; display:flex; align-items:center; justify-content:center; border:3px solid #3a47a0; }
+  .pf-main { flex:1 1 220px; min-width:200px; }
+  .pf-name { font-size:26px; font-weight:bold; margin:0; }
+  .pf-rank { color:var(--accent); font-size:16px; margin:2px 0 6px; }
+  .meter { height:10px; border-radius:6px; background:#2a3260; overflow:hidden; }
+  .meter > i { display:block; height:100%; background:linear-gradient(90deg, #ffd54a, #ff9f43); }
+  .pf-stats { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .stat { flex:1 1 120px; background:var(--panel2); border-radius:12px; padding:10px 12px; text-align:center; }
+  .stat b { display:block; font-size:26px; }
+  .stat span { color:var(--muted); font-size:13px; }
+  .streakmsg { margin:14px 0 6px; font-size:18px; }
+  .week { display:flex; gap:8px; justify-content:center; margin:8px 0 2px; }
+  .day { width:42px; text-align:center; font-size:12px; color:var(--muted); }
+  .day i { display:flex; width:34px; height:34px; margin:3px auto 0; border-radius:50%; background:#222a55; align-items:center; justify-content:center; font-style:normal; font-size:17px; }
+  .day.on i { background:#7a3b10; }
+  .day.today i { outline:2px solid var(--accent); }
+  .picker { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+  .picker button { font-size:26px; width:46px; height:46px; border-radius:12px; border:2px solid transparent; background:var(--panel2); cursor:pointer; }
+  .picker button.sel { border-color:var(--accent); background:#2b3680; }
+  .linkbtn { background:none; border:0; color:var(--muted); cursor:pointer; font:inherit; text-decoration:underline; padding:0; }
+
+  /* badges */
+  .badges { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+  .badge { background:var(--panel); border-radius:14px; padding:12px 10px; text-align:center; border:2px solid transparent; }
+  .badge .bi { font-size:34px; }
+  .badge b { display:block; font-size:14px; margin-top:4px; }
+  .badge small { display:block; color:var(--muted); font-size:12px; margin-top:3px; }
+  .badge.on { border-color:#ffd54a; background:#27265a; }
+  .badge.off { opacity:.5; }
+  .badge.off .bi { filter:grayscale(1); }
+  details.tools { margin-top:26px; }
+  details.tools summary { cursor:pointer; font-size:16px; }
+  .tools .row { justify-content:flex-start; margin:10px 0; }
 </style>
 </head>
-<body>
+<body data-no-bar>
 <div class="wrap">
   <h1>🕹️ Brain Arcade</h1>
   <p class="muted">Games that make you smarter without noticing. Pick one!</p>
+
+  <section id="profile" class="card" aria-label="My profile"></section>
+
   <div class="grid">
-    <a class="game" href="games/planet-hopper/"><div class="ic">🚀</div><h2>Planet Hopper</h2><p>Answer space questions to refuel, then dodge asteroids across the solar system.</p><span class="tag">Space · Quiz</span></a>
-    <a class="game" href="games/dungeon-math-quest/"><div class="ic">⚔️</div><h2>Dungeon Math Quest</h2><p>Defeat monsters by solving math problems. Beat the dragon boss!</p><span class="tag">Math</span></a>
-    <a class="game" href="games/word-wizard/"><div class="ic">🧙</div><h2>Word Wizard</h2><p>Unscramble spell words to zap the goblin. Themes: space, animals, fantasy.</p><span class="tag">Spelling</span></a>
-    <a class="game" href="games/typing-racer/"><div class="ic">🏎️</div><h2>Typing Racer</h2><p>Type words to speed your car past the rivals to the finish line.</p><span class="tag">Typing</span></a>
-    <a class="game" href="games/number-bridge-builder/"><div class="ic">🌉</div><h2>Number Bridge Builder</h2><p>Pick the stepping stones that make the equation true and cross the river.</p><span class="tag">Math</span></a>
-    <a class="game" href="games/hangman-heroes/"><div class="ic">🦸</div><h2>Hangman Heroes</h2><p>Guess the secret word before the monster reaches the hero.</p><span class="tag">Vocabulary</span></a>
-    <a class="game" href="games/pattern-detective/"><div class="ic">🔍</div><h2>Pattern Detective</h2><p>Crack the secret rule and name the next shape or number.</p><span class="tag">Logic</span></a>
-    <a class="game" href="games/story-mixer/"><div class="ic">📖</div><h2>Story Mixer</h2><p>Pick a hero, a place and a problem, read the silly story, then write what happens next.</p><span class="tag">Writing</span></a>
+    <a class="game" data-game="planet-hopper" href="games/planet-hopper/"><div class="ic">🚀</div><h2>Planet Hopper</h2><p>Answer space questions to refuel, then dodge asteroids across the solar system.</p><span class="tag">Space · Quiz</span></a>
+    <a class="game" data-game="dungeon-math-quest" href="games/dungeon-math-quest/"><div class="ic">⚔️</div><h2>Dungeon Math Quest</h2><p>Defeat monsters by solving math problems. Beat the dragon boss!</p><span class="tag">Math</span></a>
+    <a class="game" data-game="word-wizard" href="games/word-wizard/"><div class="ic">🧙</div><h2>Word Wizard</h2><p>Unscramble spell words to zap the goblin. Themes: space, animals, fantasy.</p><span class="tag">Spelling</span></a>
+    <a class="game" data-game="typing-racer" href="games/typing-racer/"><div class="ic">🏎️</div><h2>Typing Racer</h2><p>Type words to speed your car past the rivals to the finish line.</p><span class="tag">Typing</span></a>
+    <a class="game" data-game="number-bridge-builder" href="games/number-bridge-builder/"><div class="ic">🌉</div><h2>Number Bridge Builder</h2><p>Pick the stepping stones that make the equation true and cross the river.</p><span class="tag">Math</span></a>
+    <a class="game" data-game="hangman-heroes" href="games/hangman-heroes/"><div class="ic">🦸</div><h2>Hangman Heroes</h2><p>Guess the secret word before the monster reaches the hero.</p><span class="tag">Vocabulary</span></a>
+    <a class="game" data-game="pattern-detective" href="games/pattern-detective/"><div class="ic">🔍</div><h2>Pattern Detective</h2><p>Crack the secret rule and name the next shape or number.</p><span class="tag">Logic</span></a>
+    <a class="game" data-game="story-mixer" href="games/story-mixer/"><div class="ic">📖</div><h2>Story Mixer</h2><p>Pick a hero, a place and a problem, read the silly story, then write what happens next.</p><span class="tag">Writing</span></a>
   </div>
+
+  <h2 class="sec" id="badges-title">🏅 Badges</h2>
+  <div class="badges" id="badges"></div>
+
+  <details class="tools">
+    <summary>🛟 Back up or move my progress</summary>
+    <p class="muted">Your progress is saved in this browser only. Download a backup to keep it safe or to move it to another device, then restore it there.</p>
+    <div class="row">
+      <button class="btn alt" id="backup">⬇️ Download backup</button>
+      <button class="btn alt" id="restore">⬆️ Restore from file</button>
+      <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="muted" id="toolMsg"></p>
+    <button class="linkbtn" id="startOver">Start over (erases stars, badges and streak)</button>
+  </details>
 </div>
+
+<script src="profile.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const AVATARS = ["🧑‍🚀","🦸","🥷","🧙","🧝","🧜","🏴‍☠️","🦊","🐶","🐱","🐼","🦁","🐸","🦄","🐉","🦖","🐙","🤖","👽","🧑‍🔬"];
+let editing = false, draftAvatar = null;
+
+function renderProfile() {
+  const p = Profile.get(), box = $("profile");
+  if (!p.name || editing) {
+    const first = !p.name;
+    if (draftAvatar === null) draftAvatar = p.avatar;
+    box.innerHTML = `<h2 style="margin:0 0 6px">${first ? "👋 Welcome, explorer! What's your name?" : "✏️ Edit my profile"}</h2>
+      <p class="muted" style="margin-top:0">${first ? "Your stars, badges and daily streak will be saved under this name." : "Change your name or pick a new avatar."}</p>
+      <input class="fld" id="pfName" maxlength="20" placeholder="Your name" value="${esc(p.name)}" autocomplete="off">
+      <div class="picker" id="pfAvatars">${AVATARS.map(a => `<button type="button" data-a="${esc(a)}" class="${a === draftAvatar ? "sel" : ""}" aria-label="Avatar ${esc(a)}">${a}</button>`).join("")}</div>
+      <div class="row" style="justify-content:flex-start"><button class="btn" id="pfSave">${first ? "Let's go! 🚀" : "Save"}</button>${first ? "" : `<button class="btn alt" id="pfCancel">Cancel</button>`}</div>`;
+    $("pfAvatars").onclick = e => { const b = e.target.closest("button[data-a]"); if (!b) return; draftAvatar = b.dataset.a; [...$("pfAvatars").children].forEach(c => c.classList.toggle("sel", c === b)); };
+    const save = () => { const n = $("pfName").value.trim(); if (!n) { $("pfName").focus(); $("pfName").placeholder = "Please type a name"; return; } Profile.setIdentity({ name: n, avatar: draftAvatar }); editing = false; draftAvatar = null; };
+    $("pfSave").onclick = save;
+    $("pfName").onkeydown = e => { if (e.key === "Enter") save(); };
+    if ($("pfCancel")) $("pfCancel").onclick = () => { editing = false; draftAvatar = null; renderProfile(); };
+    return;
+  }
+  const r = Profile.rank(p.stars), s = Profile.streakInfo(p);
+  const earned = Object.keys(p.badges).length;
+  const streakMsg = s.current >= 2 ? `🔥 <b>${s.current} days in a row!</b>${s.playedToday ? " Nice work today." : " Play today to keep it going!"}`
+                  : s.current === 1 ? (s.playedToday ? "🔥 <b>1 day</b> so far. Come back tomorrow to make it 2!" : "🔥 Play today to keep your streak going!")
+                  : "Play a game today to start a streak!";
+  box.innerHTML = `<div class="pf-top">
+      <div class="avatar" aria-hidden="true">${esc(p.avatar)}</div>
+      <div class="pf-main">
+        <p class="pf-name">${esc(p.name)} <button class="linkbtn" id="pfEdit" style="font-size:14px">✏️ edit</button></p>
+        <p class="pf-rank">${r.icon} ${r.name}${r.next ? ` <span class="muted">· ${r.toNext} more ⭐ to ${r.next.icon} ${r.next.name}</span>` : ` <span class="muted">· top rank!</span>`}</p>
+        <div class="meter" role="progressbar" aria-valuenow="${Math.round(r.progress * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.round(r.progress * 100)}%"></i></div>
+      </div></div>
+    <div class="pf-stats">
+      <div class="stat"><b>⭐ ${p.stars}</b><span>total stars</span></div>
+      <div class="stat"><b>🔥 ${s.current}</b><span>day streak (best ${s.best})</span></div>
+      <div class="stat"><b>🌅 ${s.todayStars}</b><span>stars today</span></div>
+      <div class="stat"><b>🏅 ${earned}</b><span>of ${Profile.BADGES.length} badges</span></div>
+    </div>
+    <p class="streakmsg center">${streakMsg}</p>
+    <div class="week" aria-label="Last 7 days">${s.week.map(d => `<div class="day${d.played ? " on" : ""}${d.isToday ? " today" : ""}">${new Date(d.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short" }).slice(0, 3)}<i>${d.played ? "🔥" : ""}</i></div>`).join("")}</div>`;
+  $("pfEdit").onclick = () => { editing = true; draftAvatar = null; renderProfile(); };
+}
+
+function renderCards() {
+  const p = Profile.get();
+  document.querySelectorAll("a.game[data-game]").forEach(a => {
+    a.querySelectorAll(".tag.stars").forEach(t => t.remove());
+    const n = (p.games[a.dataset.game] || {}).stars || 0;
+    if (n > 0) a.insertAdjacentHTML("beforeend", `<span class="tag stars">⭐ ${n}</span>`);
+  });
+}
+
+function renderBadges() {
+  const p = Profile.get();
+  const label = id => { const b = Profile.BADGES.find(x => x.id === id); return b && b.game ? Profile.GAMES[b.game].name : "Arcade"; };
+  $("badges-title").textContent = `🏅 Badges (${Object.keys(p.badges).length}/${Profile.BADGES.length})`;
+  $("badges").innerHTML = Profile.BADGES.map(b => {
+    const got = p.badges[b.id];
+    return `<div class="badge ${got ? "on" : "off"}" title="${esc(b.desc)}"><div class="bi">${got ? b.icon : "🔒"}</div><b>${esc(b.name)}</b><small>${esc(b.desc)}</small>${got ? "" : `<small>${esc(label(b.id))}</small>`}</div>`;
+  }).join("");
+}
+
+function renderAll() { renderProfile(); renderCards(); renderBadges(); }
+Profile.onChange(renderAll);
+renderAll();
+addEventListener("pageshow", renderAll);     // coming back from a game via the back button
+
+// ---- backup / restore / reset ----
+$("backup").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(Profile.exportAll(), null, 2)], { type: "application/json" }));
+  a.download = "brain-arcade-backup.json"; a.click(); URL.revokeObjectURL(a.href);
+  $("toolMsg").textContent = "Backup downloaded. Keep the file somewhere safe!";
+};
+$("restore").onclick = () => $("restoreFile").click();
+$("restoreFile").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    if (!confirm("Restore this backup? It will replace the progress saved in this browser.")) return;
+    const n = Profile.importAll(obj);
+    $("toolMsg").textContent = `Restored ${n} saved item${n === 1 ? "" : "s"}.`;
+  } catch (err) { $("toolMsg").textContent = "Couldn't restore: " + err.message; }
+};
+$("startOver").onclick = () => {
+  if (!confirm("Start over? This erases your stars, badges and streak. Your game scores and custom words stay.")) return;
+  Profile.reset(); editing = false; draftAvatar = null; $("toolMsg").textContent = "Profile reset.";
+};
+</script>
 </body>
 </html>

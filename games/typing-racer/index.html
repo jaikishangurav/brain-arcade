@@ -38,6 +38,7 @@
 </div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type here">
 
+<script src="../../profile.js"></script>
 <script src="../../shared.js"></script>
 <script>
 "use strict";
@@ -86,6 +87,7 @@ function buildWords(level) {
 
 function startRace(level) {
   const cfg = levelDefs()[level];
+  Profile.play("typing-racer");
   r = { level, words:buildWords(level), wi:0, ci:0, typed:0, errors:0, progress:0, started:0, finishedAt:0,
         rivals:cfg.rivals.map((cps,i) => ({ cps, pos:0, phase:Math.random()*6, done:0 })), phase:"count", count:3, err:false };
   $("screen").innerHTML = `
@@ -158,6 +160,10 @@ function finish() {
   const place = r.rivals.filter(v => v.pos >= RACE_CHARS || v.done).length + 1;
   const wpm = Math.round((RACE_CHARS / 5) / (secs / 60));
   const acc = Math.round(100 * (r.typed - r.errors) / r.typed);
+  const pts = [5, 3, 2, 1][place - 1] + (acc >= 95 ? 1 : 0);
+  Profile.award("typing-racer", pts, place === 1 ? "You won the race!" : "Race finished");
+  if (place === 1) Profile.unlock("tr-winner");
+  if (wpm >= 20 && acc >= 95) Profile.unlock("tr-fast");
   const newBest = !best[r.level] || wpm > best[r.level];
   if (newBest) { best[r.level] = wpm; saveBest(); }
   const medal = ["🥇","🥈","🥉","🏁"][place - 1];

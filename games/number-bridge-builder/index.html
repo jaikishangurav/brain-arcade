@@ -34,6 +34,7 @@
   <div class="card" id="screen"></div>
 </div>
 
+<script src="../../profile.js"></script>
 <script>
 "use strict";
 const PLANKS = 8, LIVES = 3;
@@ -94,6 +95,7 @@ function showStart() {
 }
 function start(river) {
   r = { river, built:0, lives:LIVES, planks:[], over:false, last:"" };
+  Profile.play("number-bridge-builder");
   nextEquation(); render();
 }
 
@@ -132,6 +134,9 @@ function choose(n) {
 function win() {
   r.over = "win";
   const stars = r.lives;
+  Profile.award("number-bridge-builder", 2 + stars, `Crossed the ${RIVERS[r.river].name.toLowerCase()}`);
+  if (stars === 3) Profile.unlock("nbb-master");
+  if (r.river === "ocean") Profile.unlock("nbb-ocean");
   if (!best[r.river] || stars > best[r.river]) { best[r.river] = stars; saveBest(); }
   render();
   $("screen").insertAdjacentHTML("beforeend", `<div class="center"><h2>🌉 You crossed the ${RIVERS[r.river].name.toLowerCase()}!</h2><p>${"⭐".repeat(stars)}${"☆".repeat(3 - stars)} ${stars === 3 ? "Perfect bridge, no splashes!" : ""}</p>
@@ -140,6 +145,7 @@ function win() {
 }
 function lose() {
   r.over = "lose"; render();
+  if (r.built >= 4) Profile.award("number-bridge-builder", 1, `Built ${r.built} planks`);
   $("screen").insertAdjacentHTML("beforeend", `<div class="center"><h2>The bridge collapsed! 💥</h2><p class="muted">You built ${r.built} of ${PLANKS} planks. Engineers learn from every splash!</p>
     <div class="row"><button class="btn" id="again">Try again</button><button class="btn alt" id="menu">Pick another river</button></div></div>`);
   $("again").onclick = () => start(r.river); $("menu").onclick = showStart;

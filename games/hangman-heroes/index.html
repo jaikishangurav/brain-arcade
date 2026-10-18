@@ -31,6 +31,7 @@
   <div class="card" id="screen"></div>
 </div>
 
+<script src="../../profile.js"></script>
 <script src="../../shared.js"></script>
 <script>
 "use strict";
@@ -60,7 +61,7 @@ function showStart() {
     <p><button class="btn alt" id="mywords" style="font-size:15px;padding:8px 14px">✏️ My words (${customWords().length})</button></p>
     <p class="muted">${Object.values(CATEGORIES).flat().length} built-in words${customWords().length >= MIN_MINE ? " plus your own" : ""}. Add your spelling list under My words!</p>`;
   $("mywords").onclick = showWordEditor;
-  document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { g = { catChoice:b.dataset.c, streak:0, used:new Set() }; nextWord(); });
+  document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { g = { catChoice:b.dataset.c, streak:0, used:new Set() }; Profile.play("hangman-heroes"); nextWord(); });
 }
 function nextWord() {
   const all = pools();
@@ -98,6 +99,9 @@ function afterMove() {
   const complete = g.word.split("").every(c => g.guessed.has(c));
   if (complete) {
     g.over = "win"; g.streak++;
+    Profile.award("hangman-heroes", g.wrong === 0 ? 2 : 1, g.wrong === 0 ? "Flawless save!" : "Hero saved!");
+    if (g.streak % 5 === 0) Profile.award("hangman-heroes", 3, `${g.streak} saves in a row!`);
+    if (g.streak >= 5) Profile.unlock("hh-hero");
     if (g.streak > stats.best) { stats.best = g.streak; saveStats(); }
     g.msg = `<span class="good">🎉 You saved the hero! The word was ${g.word}.</span>`;
   } else if (g.wrong >= LIVES) {

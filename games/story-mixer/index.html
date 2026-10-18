@@ -49,6 +49,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="../../profile.js"></script>
 <script src="../../shared.js"></script>
 <script>
 "use strict";
@@ -105,7 +106,7 @@ function showPicker() {
   document.querySelectorAll(".opt").forEach(b => b.onclick = () => { picks[b.dataset.k] = +b.dataset.i; showPicker(); });
   $("addhero").onclick = showHeroEditor;
   $("dice").onclick = () => { picks = { hero:rand(HEROES), place:rand(PLACES), problem:rand(PROBLEMS), helper:rand(HELPERS) }; showPicker(); };
-  $("mix").onclick = () => { story = build(picks); showStory(); };
+  $("mix").onclick = () => { story = build(picks); Profile.play("story-mixer"); showStory(); };
 }
 const rand = a => Math.floor(Math.random() * a.length);
 
@@ -156,6 +157,9 @@ function addMine() {
   const v = $("mine").value.trim();
   if (!v) { toast("Write a sentence first!"); return; }
   story.paras.push({ text:v, by:"you" }); tipIdx++;
+  const mineCount = story.paras.filter(p => p.by === "you").length;
+  if (mineCount <= 5) Profile.award("story-mixer", 2, `You wrote part ${mineCount}`);
+  if (mineCount >= 3) Profile.unlock("sm-author");
   showStory();
   toast("Added! Keep going…");
 }
@@ -175,7 +179,7 @@ function saveStory() {
   const copy = JSON.parse(JSON.stringify(story));
   if (!copy.title.trim()) copy.title = "My story";
   if (copy.id) { const i = library.findIndex(s => s.id === copy.id); if (i >= 0) library[i] = copy; else library.unshift(copy); }
-  else { copy.id = Date.now(); story.id = copy.id; library.unshift(copy); }
+  else { copy.id = Date.now(); story.id = copy.id; library.unshift(copy); Profile.award("story-mixer", 1, "Story saved"); Profile.unlock("sm-storyteller"); }
   library = library.slice(0, 12);
   toast(persist() ? "Saved to My stories 💾" : "Couldn't save in this browser.");
   renderHud();
@@ -217,6 +221,7 @@ function showHeroEditor(msg) {
     if (!/^(a|an|the)\s/i.test(desc)) return showHeroEditor("Start the description with “a” or “an”, like: a brave young explorer.");
     const l = customHeroes(); l.push({ e: $("he").value, name, desc });
     const ok = store.set(HERO_KEY, l); rebuildHeroes();
+    if (ok) Profile.unlock("sm-hero-maker");
     showHeroEditor(ok ? `<span class="good">✅ ${esc(name)} joined the team! Find them under “Who is the hero?”</span>` : "Couldn't save in this browser.");
   };
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const l = customHeroes(); l.splice(+b.dataset.del, 1); store.set(HERO_KEY, l); rebuildHeroes(); picks.hero = null; showHeroEditor("Deleted."); });

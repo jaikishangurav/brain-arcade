@@ -35,6 +35,7 @@
   <div class="card" id="screen"></div>
 </div>
 
+<script src="../../profile.js"></script>
 <script>
 "use strict";
 const PUZZLES = 8, LIVES = 3;
@@ -100,6 +101,7 @@ function showStart() {
 }
 function start(c) {
   g = { c, i:0, lives:LIVES, clues:0, solvedAll:true };
+  Profile.play("pattern-detective");
   nextPuzzle();
 }
 function nextPuzzle() {
@@ -130,6 +132,7 @@ function choose(k) {
   if (g.solved) return;
   if (g.choices[k] === g.p.ans) {
     g.solved = true; g.clues++;
+    Profile.award("pattern-detective", 1, "Clue found");
     g.msg = `<span class="good">🔍 Clue found!</span> <span class="muted">${g.p.rule}</span>`;
     render();
   } else {
@@ -146,6 +149,9 @@ function advance() {
 }
 function closeCase() {
   const stars = g.lives;
+  Profile.award("pattern-detective", 3 + g.lives, "Case closed!");
+  if (g.lives === LIVES) Profile.unlock("pd-perfect");
+  if (g.c === "chief") Profile.unlock("pd-chief");
   if (!best[g.c] || stars > best[g.c]) { best[g.c] = stars; saveBest(); }
   renderHud();
   $("screen").innerHTML = `<div class="center"><div style="font-size:72px">📁🏅</div><h2 style="margin-top:0">Case closed!</h2>

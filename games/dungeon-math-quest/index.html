@@ -32,6 +32,7 @@
   <div class="card" id="screen"></div>
 </div>
 
+<script src="../../profile.js"></script>
 <script>
 "use strict";
 const ROOMS = 10, MAX_HP = 5;
@@ -79,7 +80,8 @@ function showStart() {
 }
 
 function start(mode) {
-  g = { mode, room:1, hp:MAX_HP, gold:0, streak:0, mon:null, prob:null, msg:"" };
+  g = { mode, room:1, hp:MAX_HP, gold:0, streak:0, mon:null, prob:null, msg:"", hurt:false };
+  Profile.play("dungeon-math-quest");
   startRoom();
 }
 function startRoom() {
@@ -122,7 +124,7 @@ function submit() {
     g.prob = gen(g.room, g.mode);
     renderBattle(); $("mon").classList.add("shake");
   } else {
-    g.streak = 0; g.hp--;
+    g.streak = 0; g.hp--; g.hurt = true;
     g.msg = `💥 Ouch! ${g.prob.text} = ${g.prob.ans}`;
     if (g.hp <= 0) return defeat();
     g.prob = gen(g.room, g.mode);
@@ -133,6 +135,7 @@ function submit() {
 function roomClear() {
   const loot = 10 * g.room;
   g.gold += loot;
+  Profile.award("dungeon-math-quest", 1, "Room cleared");
   const heal = g.room % 3 === 0 && g.hp < MAX_HP;
   if (heal) g.hp++;
   renderHud();
@@ -149,6 +152,9 @@ function recordBest(rooms) {
 }
 function victory() {
   recordBest(ROOMS);
+  Profile.award("dungeon-math-quest", 5, "Dungeon cleared!");
+  Profile.unlock("dmq-dragon");
+  if (!g.hurt) Profile.unlock("dmq-flawless");
   $("screen").innerHTML = `<div class="center"><div style="font-size:72px">🏆</div><h2>You cleared the dungeon!</h2>
     <p>The dragon is defeated and you carry home <b>🪙 ${g.gold}</b> gold!</p>
     <button class="btn" id="again">Play again</button></div>`;

@@ -28,11 +28,51 @@ Then open http://localhost:8800.
 ## Structure
 
 ```
-index.html            hub page listing every game
+index.html            hub page: profile, games and badges
+profile.js            shared profile, stars, badges and daily streak
 shared.css            shared colours, buttons and animations
 shared.js             helpers shared by the games that load JSON data
 games/<game-name>/    one folder per game, each with an index.html (and a data file if it has one)
 ```
+
+## Profile, stars and streaks
+
+Every game feeds one shared profile, kept in the browser's local storage (no accounts, no server). `profile.js` holds it, and the home page shows it.
+
+- **Name and avatar:** chosen on the home page the first time. A small bar at the top of every game shows his name, rank, stars and streak, and links back to the profile.
+- **Stars:** each game awards stars for finished things, shown as a small pop-up.
+
+  | Game | Stars |
+  | --- | --- |
+  | Planet Hopper | 5 for a new world, 2 for a revisit, +10 for each tour completed |
+  | Dungeon Math Quest | 1 per room cleared, +5 for beating the dragon |
+  | Word Wizard | 1 per word spelled, +2 to +6 for the rank reached |
+  | Typing Racer | 5 / 3 / 2 / 1 for 1st to 4th, +1 for 95% accuracy |
+  | Number Bridge Builder | 2 plus lives left for a crossing, 1 for a collapse after 4+ planks |
+  | Hangman Heroes | 1 per save (2 if flawless), +3 every 5 in a row |
+  | Pattern Detective | 1 per clue, +3 and +1 per magnifying glass left for closing a case |
+  | Story Mixer | 2 for each of the first 5 parts he writes, 1 for saving a story |
+
+- **Ranks:** Cadet, Pilot (25 stars), Navigator (75), Captain (150), Commander (300) and Admiral (500).
+- **Daily streak:** any day he starts a game or earns a star counts. Playing on consecutive days builds the streak ("3 days in a row!"), and missing a day starts it again from 1 (the best streak is remembered). Days use the device's local date.
+- **Badges:** 30 in total. Some are general (star totals, streaks, trying 4 or all 8 games) and some belong to a game (Dragon Slayer, Perfect Spell, Racing Champion, Story Author and more). The home page shows earned badges in colour and locked ones greyed out with what to do to earn them.
+- **Backup:** the home page can download a backup file with his profile, scores, custom words, questions, heroes and saved stories, and restore it in another browser. This is the way to move progress between devices, since nothing is stored online.
+
+Because the profile lives in local storage, it belongs to one browser on one device. Clearing the browser's site data erases it, so a backup now and then is a good idea.
+
+### Using the profile in a game
+
+```html
+<script src="../../profile.js"></script>
+```
+
+```js
+Profile.play("my-game");                     // a round started (counts toward the daily streak)
+Profile.award("my-game", 3, "Level cleared"); // give stars, with a short reason for the pop-up
+Profile.unlock("my-badge-id");               // give a badge once
+```
+
+Add the game to `GAMES` and any new badges to `BADGES` in `profile.js` so they show on the home page. A page can opt out of the top bar with `<body data-no-bar>`, as the home page does.
 
 ## Game data
 
@@ -84,7 +124,8 @@ Each of these games has a screen for adding content in the browser. It is saved 
 
 1. Create `games/<name>/index.html` and link `../../shared.css`.
 2. Add a "← Arcade" link back to `../../`.
-3. Add a card to `index.html`. Replace a "Coming soon" card if there is one.
+3. Add a card to `index.html` with `data-game="<name>"` set to the folder name, so its stars show on the card.
+4. Load `profile.js` and call `Profile.play`, `Profile.award` and `Profile.unlock` (see above).
 
 Best scores are saved in the browser's local storage, with a separate key per game.
 

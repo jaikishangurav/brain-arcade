@@ -41,6 +41,7 @@
   <div class="card" id="screen"><p class="muted center">Loading the spell book…</p></div>
 </div>
 
+<script src="../../profile.js"></script>
 <script>
 "use strict";
 // Words live in words.json as { "word": "ATOM", "category": "Science", "clue": "..." } (see README).
@@ -85,6 +86,7 @@ function showStart() {
 }
 function start() {
   g = { round:0, score:0, streak:0, used:new Set(), solved:0, source:onlyMine ? customWords().map(toWord) : WORDS };
+  Profile.play("word-wizard");
   nextWord();
 }
 function nextWord() {
@@ -175,6 +177,10 @@ function finish() {
   clearInterval(tick);
   const rank = g.score >= 700 ? "Archmage 🧙‍♂️👑" : g.score >= 450 ? "Sorcerer ⚡" : g.score >= 250 ? "Mage ✨" : "Apprentice 📖";
   const isBest = g.score > best;
+  const bonus = g.score >= 700 ? 6 : g.score >= 450 ? 4 : g.score >= 250 ? 2 : 0;
+  Profile.award("word-wizard", g.solved + bonus, `Spelled ${g.solved} words`);
+  if (g.solved === ROUNDS) Profile.unlock("ww-perfect");
+  if (g.score >= 700) Profile.unlock("ww-archmage");
   if (isBest) { best = g.score; try { localStorage.setItem("ww-best", String(best)); } catch(e) {} }
   renderHud();
   $("screen").innerHTML = `<div class="center"><div style="font-size:72px">${g.solved === ROUNDS ? "🏆" : "🎓"}</div><h2 style="margin-top:0">${rank}</h2>
@@ -241,6 +247,7 @@ function showEditor(msg) {
     if (o.clue.toUpperCase().includes(o.word)) return showEditor("Oops, the clue gives the word away. Describe it without using it!");
     const l = customWords(); l.push(o);
     const ok = saveCustom(l); rebuildWords();
+    if (ok) Profile.unlock("wordsmith");
     showEditor(ok ? `<span class="good">✅ ${esc(o.word)} added!</span>` : "Couldn't save in this browser.");
   };
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const l = customWords(); l.splice(+b.dataset.del, 1); saveCustom(l); rebuildWords(); showEditor("Deleted."); });
