@@ -17,7 +17,7 @@ A collection of small educational browser games for kids. Each game is plain HTM
 
 Online (GitHub Pages): https://jaikishangurav.github.io/brain-arcade/
 
-Locally, serve the folder. Most games also work when `index.html` is opened straight from disk, but Word Wizard loads `words.json`, which browsers block on `file://` pages, so use a server:
+Locally, serve the folder. The hub and the games that have their content inside the page can be opened straight from disk, but Word Wizard, Hangman Heroes, Typing Racer and Story Mixer load JSON files, which browsers block on `file://` pages, so use a server:
 
 ```bash
 python3 -m http.server 8800
@@ -30,28 +30,53 @@ Then open http://localhost:8800.
 ```
 index.html            hub page listing every game
 shared.css            shared colours, buttons and animations
-games/<game-name>/    one folder per game, each with an index.html
+shared.js             helpers shared by the games that load JSON data
+games/<game-name>/    one folder per game, each with an index.html (and a data file if it has one)
 ```
 
 ## Game data
 
-Word Wizard keeps its words in a JSON file so you can add more without touching the code.
+Four games keep their content in JSON files, so you can add more without touching the code:
 
 | File | Contents |
 | --- | --- |
-| `games/word-wizard/words.json` | A list of `{ "word", "category", "clue" }` entries (138 words today) |
+| `games/word-wizard/words.json` | A list of `{ "word", "category", "clue" }` entries (138 words) |
+| `games/hangman-heroes/words.json` | Category names mapped to lists of capital-letter words (120 words) |
+| `games/typing-racer/words.json` | `easy`, `medium` and `hard` lists of lowercase words (108 words) |
+| `games/story-mixer/story.json` | Heroes, places, problems, helpers, power words, silly things, sounds, endings and the sentence templates |
 
-To add a word, append an entry such as:
+Because the games load these files, open them through a server (see Play above). The `file://` double-click method is blocked by browsers, and the games show a message explaining this.
+
+### Adding content
+
+Word Wizard: append an entry such as
 
 ```json
 { "word": "NEBULA", "category": "Space", "clue": "A giant cloud of gas and dust where stars are born" }
 ```
 
-Rules: the word is 3 to 12 capital letters, it appears only once, and the clue must not contain the word. Words are grouped by length into easy (up to 5 letters), medium (6) and hard (7 or more), and a game starts easy and gets harder. Problems with an entry are reported in the browser console.
+The word is 3 to 12 capital letters, it appears only once, and the clue must not contain the word. Words are grouped by length into easy (up to 5 letters), medium (6) and hard (7 or more), and a game starts easy and gets harder.
 
-### Writing your own words
+Hangman Heroes: add a word (3 to 14 capital letters) to a category list, or add a new category whose name starts with an emoji.
 
-Click **✏️ My words** on the Word Wizard start screen to add words in the browser. They are saved in this browser and mixed in with the built-in ones. Once there are 10 or more, an option appears to play with only your own words. **Download as JSON** exports them in the same format as `words.json`, ready to be pasted into the file.
+Typing Racer: add lowercase words (2 to 14 letters) to a level. Medium races mix easy and medium words, and hard races mix medium and hard words.
+
+Story Mixer: add to `heroes`, `places`, `problems` or `helpers` (the picker grows automatically, and new entries should go at the end so saved stories keep working). Templates use placeholders such as `{hero}`, `{desc}`, `{at}`, `{start}`, `{cause}`, `{solve}`, `{helper}`, `{power}`, `{adj}` and `{feel}`. Check each new piece by building a few stories, and avoid writing "a" before `{adj}`, since the adjective might start with a vowel.
+
+Problems with an entry are reported in the browser console.
+
+### Players can add their own
+
+Each of these games has a screen for adding content in the browser. It is saved in that browser only and mixed in with the built-in content, and **Download as JSON** exports it in a format that can be pasted into the data files.
+
+| Game | Where | What he can add |
+| --- | --- | --- |
+| Word Wizard | ✏️ My words | Words with a category and clue. With 10 or more, he can play with only his own words |
+| Hangman Heroes | ✏️ My words | A spelling list. With 3 or more, a "⭐ My words" category appears |
+| Typing Racer | ✏️ My words | A spelling list. With 3 or more, a "⭐ My words" race appears |
+| Story Mixer | ➕ Add my own hero | Himself, a friend or a pet, with a name, description and emoji |
+
+`shared.js` holds the helpers these games share: safe text escaping, saving to the browser, loading JSON, downloading JSON, and the word-list editor used by Hangman Heroes and Typing Racer.
 
 ## Adding a game
 

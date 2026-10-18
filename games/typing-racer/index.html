@@ -38,21 +38,27 @@
 </div>
 <input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type here">
 
+<script src="../../shared.js"></script>
 <script>
 "use strict";
-const EASY = ["sun","star","moon","rocket","brick","game","book","read","lava","cave","gold","tree","jump","fast","robot","bridge","magic","word","map","fish","space","sword","torch","build","coal","dig","wolf","lego","moon","comet"];
-const MEDIUM = ["planet","galaxy","diamond","creeper","library","science","gravity","builder","explore","castle","dragon","story","volcano","journey","puzzle","battery","pickaxe","machine","chapter","kingdom","meteor","crystal","engine","forest"];
-const HARD = ["telescope","adventure","astronaut","experiment","landscape","lightning","mysterious","architect","constellation","microscope","imagination","laboratory","encyclopedia","spaceship","gravitational","exploration"];
+// Words live in words.json: { "easy": [...], "medium": [...], "hard": [...] }  (see README for how to add more)
+let WORDS = { easy:[], medium:[], hard:[] };
+const MINE_KEY = "tr-custom", MIN_MINE = 3;
 const LEVELS = {
-  easy:   { name:"Easy",   note:"Short words, friendly rivals",     words:() => EASY,                  rivals:[0.8, 1.0, 1.2] },
-  medium: { name:"Medium", note:"Longer words, quicker rivals",     words:() => EASY.concat(MEDIUM),   rivals:[1.2, 1.5, 1.8] },
-  hard:   { name:"Hard",   note:"Big words, speedy rivals",         words:() => MEDIUM.concat(HARD),   rivals:[1.7, 2.0, 2.4] },
+  easy:   { name:"Easy",   note:"Short words, friendly rivals",     words:() => WORDS.easy,                rivals:[0.8, 1.0, 1.2] },
+  medium: { name:"Medium", note:"Longer words, quicker rivals",     words:() => WORDS.easy.concat(WORDS.medium),   rivals:[1.2, 1.5, 1.8] },
+  hard:   { name:"Hard",   note:"Big words, speedy rivals",         words:() => WORDS.medium.concat(WORDS.hard),   rivals:[1.7, 2.0, 2.4] },
 };
 const RACE_CHARS = 160;
 const COLORS = ["#ffd54a", "#e5484d", "#4aa3ff", "#5be37d"];
 const NAMES = ["You", "Zoom", "Turbo", "Blaze"];
 const $ = id => document.getElementById(id);
-const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const { esc, shuffle, store, fetchJSON, loadErrorHtml, wordEditor } = ARC;
+const customWords = () => store.get(MINE_KEY, []);
+// the built-in levels, plus a race made from the player's own words once they have a few
+const levelDefs = () => customWords().length >= MIN_MINE
+  ? { ...LEVELS, mine:{ name:"⭐ My words", note:`Race using your own ${customWords().length} words`, words:customWords, rivals:[1.2, 1.5, 1.8] } }
+  : LEVELS;
 
 let best = {};
 try { const s = JSON.parse(localStorage.getItem("tr-best")); if (s && typeof s === "object") best = s; } catch(e) {}
@@ -65,19 +71,21 @@ function showStart() {
   $("hud").innerHTML = "";
   $("screen").innerHTML = `<h2 style="margin-top:0">Pick your race</h2>
     <p class="muted">Type each word exactly as it appears to speed your car along the track. Wrong keys don't move you, so accuracy wins races. Beat the rivals to the finish line!</p>
-    <div class="levels">${Object.entries(LEVELS).map(([k,l]) => `<button class="btn" data-l="${k}">${l.name}<small>${l.note}${best[k] ? ` · best ${best[k]} WPM` : ""}</small></button>`).join("")}</div>`;
+    <div class="levels">${Object.entries(levelDefs()).map(([k,l]) => `<button class="btn" data-l="${k}">${l.name}<small>${l.note}${best[k] ? ` · best ${best[k]} WPM` : ""}</small></button>`).join("")}
+      <button class="btn alt" id="mywords">✏️ My words (${customWords().length})<small>Add your spelling list to race with it</small></button></div>`;
+  $("mywords").onclick = showWordEditor;
   document.querySelectorAll("[data-l]").forEach(b => b.onclick = () => startRace(b.dataset.l));
 }
 
 function buildWords(level) {
-  const pool = LEVELS[level].words(); const out = []; let n = 0;
+  const pool = levelDefs()[level].words(); const out = []; let n = 0;
   let bag = [];
   while (n < RACE_CHARS) { if (!bag.length) bag = shuffle(pool); const w = bag.pop(); out.push(w); n += w.length; }
   return out;
 }
 
 function startRace(level) {
-  const cfg = LEVELS[level];
+  const cfg = levelDefs()[level];
   r = { level, words:buildWords(level), wi:0, ci:0, typed:0, errors:0, progress:0, started:0, finishedAt:0,
         rivals:cfg.rivals.map((cps,i) => ({ cps, pos:0, phase:Math.random()*6, done:0 })), phase:"count", count:3, err:false };
   $("screen").innerHTML = `
@@ -161,7 +169,17 @@ function finish() {
   $("menu").onclick = showStart;
 }
 
-showStart();
+function showWordEditor() {
+  wordEditor({ el: $("screen"), key: MINE_KEY, min: 2, max: 14, minToPlay: MIN_MINE, normalize: w => w.toLowerCase(), exportName: "my-typing-words.json",
+    intro: "Add words to race with, like your spelling list!", example: "e.g. because, friend, necessary", onBack: showStart });
+}
+
+$("screen").innerHTML = '<p class="muted center">Loading words…</p>';
+fetchJSON("words.json").then(data => {
+  WORDS = data;
+  Object.entries(data).forEach(([lvl, ws]) => ws.forEach(w => { if (!/^[a-z]{2,14}$/.test(w)) console.warn("Bad word in " + lvl + ": " + w); }));
+  showStart();
+}).catch(err => { console.error(err); $("screen").innerHTML = loadErrorHtml(err, "the word lists"); });
 </script>
 </body>
 </html>

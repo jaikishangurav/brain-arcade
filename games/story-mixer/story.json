@@ -1,0 +1,122 @@
+{
+  "heroes": [
+    {"e":"🧑‍🚀","name":"Zara","desc":"a fearless young astronaut"},
+    {"e":"⛏️","name":"Pixel","desc":"a block-mining explorer with a square hat"},
+    {"e":"🧱","name":"Brick","desc":"a tiny plastic builder with a very big imagination"},
+    {"e":"🤖","name":"Bolt","desc":"a friendly robot who loved collecting facts"},
+    {"e":"🐉","name":"Ember","desc":"a baby dragon who sneezed sparks"},
+    {"e":"🧪","name":"Professor Fizz","desc":"a scientist with wild, bubbly hair"},
+    {"e":"🐱","name":"Luna","desc":"a space cat in a glass helmet"},
+    {"e":"🏴‍☠️","name":"Captain Pip","desc":"a very polite pirate"},
+    {"e":"🦊","name":"Fenn","desc":"a clever fox who loved riddles"},
+    {"e":"🦸","name":"Nova","desc":"a young inventor with goggles and a very full tool belt"}
+  ],
+  "places": [
+    {"e":"🪐","name":"Purple Planet","at":"on a faraway planet with a purple sky","flavor":"Two moons hung overhead, winking like sleepy eyes."},
+    {"e":"🏰","name":"Block Castle","at":"inside a huge castle built from colourful blocks","flavor":"Every tower wobbled a little, as if it were laughing."},
+    {"e":"🌊","name":"Deep Ocean","at":"at the bottom of the sparkling ocean","flavor":"Glowing jellyfish drifted past like floating lanterns."},
+    {"e":"🧪","name":"Secret Lab","at":"in a secret laboratory under a mountain","flavor":"Test tubes bubbled and fizzed in every colour of the rainbow."},
+    {"e":"📚","name":"Magic Library","at":"inside a magical library with no ceiling","flavor":"Paper birds fluttered between the shelves, flapping their pages."},
+    {"e":"☁️","name":"Floating Island","at":"on a floating island high above the clouds","flavor":"Tiny rainbows hopped from cloud to cloud."},
+    {"e":"🚀","name":"Starship","at":"aboard a starship zooming past Saturn","flavor":"The rings of Saturn flashed by the window like a spinning record."},
+    {"e":"🌋","name":"Volcano Island","at":"on an island with a sleepy, grumbling volcano","flavor":"The volcano burped out puffs of warm, glittery smoke."},
+    {"e":"🏜️","name":"Red Desert","at":"in a red desert dotted with giant cacti","flavor":"Two suns baked the sand, and little dust whirlwinds twirled about like dancers."},
+    {"e":"🏔️","name":"Snowy Peak","at":"at the top of a snowy mountain","flavor":"Snowflakes drifted down and sparkled like tiny stars."}
+  ],
+  "problems": [
+    {"e":"🌟","name":"Missing stars","title":"The Missing Stars","start":"all the stars in the sky blinked out, one by one","cause":"a sleepy comet had gobbled them up like popcorn","solve":"tickled the comet until it giggled, and every star popped back into the sky"},
+    {"e":"💥","name":"Confetti monster","title":"The Confetti Monster","start":"a giant green monster stomped in, hissing like a kettle","cause":"the monster was only hissing because it was scared of the dark","solve":"gave the monster a night-light, and it burst into happy confetti"},
+    {"e":"🗺️","name":"Upside-down maps","title":"The Upside-Down Map","start":"every map in the world flipped upside down","cause":"a mischievous breeze had turned all the maps over while everyone slept","solve":"turned the biggest map the right way up, and everyone finally knew where to go"},
+    {"e":"📖","name":"Vanishing books","title":"The Vanishing Books","start":"every book on the shelves vanished without a trace","cause":"a bookworm as big as a bus was nibbling on the stories","solve":"read the bookworm a bedtime story, and it burped every book back out"},
+    {"e":"🔧","name":"Grumpy rocket","title":"The Grumpy Rocket","start":"the rocket refused to start, no matter which buttons were pushed","cause":"the rocket was grumpy because nobody had said good morning to it","solve":"said a cheerful good morning, and the rocket purred to life"},
+    {"e":"🟢","name":"Hungry slime","title":"The Hungry Slime","start":"a gooey green slime began gobbling up everything in sight","cause":"the slime was hungry because it had lost its favourite snack, a golden brick","solve":"found the golden brick under a cushion, and the slime shrank to the size of a marble"},
+    {"e":"⛈️","name":"Broken bridge","title":"The Broken Bridge","start":"a thunderstorm snapped the only bridge in half","cause":"the storm cloud was sulking because it had lost its umbrella","solve":"built a rainbow bridge from bricks, and the cloud cheered up at last"},
+    {"e":"🥚","name":"Glowing egg","title":"The Glowing Egg","start":"a glowing egg began to wobble and crack","cause":"inside was a baby star that had never seen the sky","solve":"carried the baby star up high, and it twinkled a big thank you"},
+    {"e":"🎵","name":"Silent world","title":"The Silent Song","start":"every sound in the world went quiet, even the birds","cause":"a shy cloud had tucked every sound into its pocket","solve":"told the cloud a joke, and every sound came tumbling out in a joyful chorus"},
+    {"e":"🌈","name":"Lost colours","title":"The Colour Thief","start":"all the colours drained out of the world, leaving everything grey","cause":"a sneaky raven had collected them to decorate its nest","solve":"swapped a shiny button for the colours, and the world burst back into rainbow"}
+  ],
+  "helpers": [
+    {"e":"🔦","name":"a magic flashlight","power":"Its beam was so bright that every shadow ran away giggling."},
+    {"e":"🛠️","name":"a super toolbox","power":"It could build anything, from a staircase to a flying sofa."},
+    {"e":"🐸","name":"a talking space frog","power":"The frog croaked clever advice from under a tiny helmet."},
+    {"e":"🎒","name":"a rocket-powered backpack","power":"It went WHOOSH and zoomed over every obstacle."},
+    {"e":"📘","name":"a book that answers questions","power":"Its pages whispered the answer to anything, as long as the question was polite."},
+    {"e":"🧫","name":"a pet slime named Gloop","power":"Gloop could stretch like a rubber band and squeeze through the smallest gap."},
+    {"e":"🥾","name":"a pair of gravity boots","power":"They let the wearer stroll up walls and across ceilings."},
+    {"e":"🧩","name":"a magic brick","power":"It could turn into any tool, any vehicle, or even a sandwich."},
+    {"e":"🪁","name":"a kite that could fly through anything","power":"It tugged its owner over mountains and through clouds without a single bump."},
+    {"e":"🔭","name":"a telescope that sees around corners","power":"Through it, even the tiniest secret popped into view."}
+  ],
+  "powerWords": {
+    "describing": [["enormous","very, very big"],["mysterious","strange and hard to explain"],["peculiar","odd or unusual"],["luminous","glowing, giving off light"],["gigantic","extremely large"],["ingenious","very clever and inventive"]],
+    "feelings": [["determined","not giving up, no matter what"],["bewildered","very confused"],["curious","eager to find out and learn"],["astonished","extremely surprised"],["fearless","not afraid of anything"]]
+  },
+  "sillyThings": [
+    ["a parade of dancing penguins","waddled past in tiny party hats"],
+    ["three grumpy llamas","blocked the path until someone told a joke"],
+    ["a gang of tap-dancing robots","clanked by, singing wildly off-key"],
+    ["a cloud of giggling fireflies","buzzed around and tickled everyone's ears"],
+    ["a talking potato","rolled in and asked for directions to the Moon"],
+    ["a team of polite zombies","knocked politely and asked if anyone had seen their slippers"]
+  ],
+  "sounds": [
+    "BOOM!",
+    "CRASH!",
+    "WHOOSH!",
+    "SPLAT!",
+    "KABLOOEY!",
+    "ZAP!"
+  ],
+  "times": [
+    "sunny",
+    "drizzly",
+    "strangely quiet",
+    "extra bouncy",
+    "sparkly"
+  ],
+  "celebrations": [
+    "That night, everyone held a feast with pancakes, pizza, and a cake shaped like a rocket.",
+    "The crowd cheered so loudly that the echo travelled across three galaxies.",
+    "They celebrated with a dance party that lasted until the moons went to bed.",
+    "A parade of tiny trumpeting mice marched through to say thank you."
+  ],
+  "morals": [
+    "Even the smallest hero can fix the biggest problem",
+    "Asking questions is the first step to solving anything",
+    "Teamwork turns scary things into silly things",
+    "Reading and learning are real superpowers",
+    "Being kind is the best kind of magic"
+  ],
+  "templates": {
+    "beginning": [
+      "One {time} morning, {hero}, {desc}, woke up {at}. {flavor} It seemed like an ordinary day, until {start}. {hero} gasped. “{s1}” echoed in the distance. {hero} felt {feel}.",
+      "{hero} was {desc}, and today was supposed to be a quiet day {at}. {flavor} But then {start}! {hero} felt {feel}. “Well,” said {hero}, “this is a problem. {s1}”",
+      "Everything was calm {at} when {hero}, {desc}, noticed something strange. {flavor} Suddenly, {start}! “{s1}” went the sky. {hero} felt {feel}."
+    ],
+    "middle": [
+      "To fix it, {hero} grabbed {helper}. {power} Soon {hero} met {sn}, who {sv}. {s2} It was the most {adj} thing {hero} had seen all day. Following the clues, {hero} finally discovered the truth: {cause}.",
+      "{hero} reached for {helper}. {power} Just then, {sn} {sv}. “Don’t worry!” shouted {hero}, “I have a plan!” The clues led to something {adj}, and at last {hero} learned why: {cause}.",
+      "{hero} knew just what to do: grab {helper}! {power} Then {sn} {sv}. {s2} It was the most {adj} sight {hero} had ever seen. After following a trail of clues, {hero} learned the truth: {cause}."
+    ],
+    "ending": [
+      "So {hero} {solve}. {celebrate} “{moral},” said {hero} with a grin. The end!",
+      "And that is how {hero} {solve}. {celebrate} {hero} smiled, because now {hero} knew one thing for sure: {moral}. The end!",
+      "With one last great idea, {hero} {solve}. {celebrate} Looking at all the happy faces, {hero} remembered: {moral}. The end!"
+    ]
+  },
+  "starters": [
+    "Suddenly,",
+    "But then,",
+    "Meanwhile,",
+    "To everyone’s surprise,",
+    "The next day,",
+    "“Oh no!” said"
+  ],
+  "tips": [
+    "Tip: add a describing word, like a “squishy” slime or a “tiny” rocket.",
+    "Tip: say how a character feels. Was the hero nervous, proud, or hungry?",
+    "Tip: use a sound word, like CRASH! or SPLAT!",
+    "Tip: write what a character says out loud, in quotation marks.",
+    "Tip: surprise the reader! What is the last thing anyone expects?"
+  ]
+}

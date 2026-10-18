@@ -21,3 +21,9 @@ header.top h1 { margin:0; font-size:22px; }
 .shake { animation:shake .3s; }
 @keyframes pop { 0% { transform:scale(1); } 50% { transform:scale(1.25); } 100% { transform:scale(1); } }
 .pop { animation:pop .3s; }
+.fld { width:100%; margin:5px 0; padding:9px 11px; border-radius:10px; border:2px solid #3a47a0; background:#0b1030; color:var(--ink); font-size:16px; font-family:inherit; }
+.fld:focus { outline:none; border-color:var(--accent); }
+.wchips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.wchip { display:inline-flex; align-items:center; gap:6px; background:var(--panel2); border-radius:99px; padding:4px 6px 4px 12px; font-size:15px; }
+.wchip button { background:#3a4890; color:var(--ink); border:0; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; line-height:1; }
+.wchip button:hover { background:#7a2a2a; }

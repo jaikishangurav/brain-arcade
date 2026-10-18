@@ -31,19 +31,17 @@
   <div class="card" id="screen"></div>
 </div>
 
+<script src="../../shared.js"></script>
 <script>
 "use strict";
-const CATEGORIES = {
-  "🪐 Space":    ["MARS","JUPITER","NEBULA","SUPERNOVA","UNIVERSE","SATELLITE","COSMOS","ASTRONOMY","MOONLIGHT","WORMHOLE","STARSHIP","ORBITER","SUNSPOT","LAUNCHPAD"],
-  "🐾 Animals":  ["LEOPARD","HEDGEHOG","FLAMINGO","SQUIRREL","CROCODILE","BUTTERFLY","PORCUPINE","ALLIGATOR","GORILLA","PEACOCK","SEAHORSE","WALRUS","OSTRICH","CHAMELEON"],
-  "🐉 Fantasy":  ["UNICORN","GOBLIN","SORCERER","PHOENIX","DUNGEON","ENCHANTED","GRIFFIN","WARRIOR","MERMAID","DRAGONFLY","WIZARDRY","POTIONS","CRYSTALS","CAULDRON"],
-  "🔬 Science":  ["ELECTRON","GLACIER","MAGNETIC","HURRICANE","DINOSAUR","ECOSYSTEM","BIOLOGY","CHEMISTRY","FRICTION","VOLTAGE","RAINFOREST","TORNADO","MICROSCOPE","EXPERIMENT"],
-  "📚 Books":    ["DETECTIVE","ILLUSTRATOR","BOOKWORM","NOVEL","POETRY","LEGEND","CHARACTER","FAIRYTALE","BESTSELLER","SEQUEL","VILLAIN","LIBRARIAN","ADVENTURE","BOOKMARK"],
-  "🧱 Building": ["BLUEPRINT","SKYSCRAPER","FOUNDATION","MINIFIGURE","BASEPLATE","WORKSHOP","CONSTRUCTION","ARCHITECT","STRUCTURE","TUNNEL","DRAWBRIDGE","FORTRESS","SCAFFOLD","BULLDOZER"],
-};
+// Words live in words.json: { "🪐 Space": ["MARS", ...], ... }  (see README for how to add more)
+let CATEGORIES = {};
+const MINE = "⭐ My words", MINE_KEY = "hh-custom", MIN_MINE = 3;
 const LIVES = 6, LANE = 8;     // monster starts at cell 7; hero at cell 0; 6 wrong guesses and it reaches the hero
 const $ = id => document.getElementById(id);
-const pick = a => a[Math.floor(Math.random() * a.length)];
+const { esc, pick, store, fetchJSON, loadErrorHtml, wordEditor } = ARC;
+const customWords = () => store.get(MINE_KEY, []);
+const pools = () => customWords().length >= MIN_MINE ? { ...CATEGORIES, [MINE]: customWords() } : CATEGORIES;
 
 let stats = { best:0 };
 try { const s = JSON.parse(localStorage.getItem("hh-stats")); if (s && typeof s.best === "number") stats = s; } catch(e) {}
@@ -58,14 +56,17 @@ function showStart() {
   g = null; renderHud();
   $("screen").innerHTML = `<h2 style="margin-top:0">Save the village!</h2>
     <p class="muted">A monster is marching toward the hero. Guess the secret word one letter at a time. Each wrong letter brings the monster a step closer, and you can afford 5 mistakes. Save the hero and build a streak!</p>
-    <div class="cats">${Object.keys(CATEGORIES).map(k => `<button class="btn alt" data-c="${k}">${k}</button>`).join("")}<button class="btn" data-c="*">🎲 Surprise me</button></div>`;
+    <div class="cats">${Object.keys(pools()).map(k => `<button class="btn alt" data-c="${esc(k)}">${esc(k)}</button>`).join("")}<button class="btn" data-c="*">🎲 Surprise me</button></div>
+    <p><button class="btn alt" id="mywords" style="font-size:15px;padding:8px 14px">✏️ My words (${customWords().length})</button></p>
+    <p class="muted">${Object.values(CATEGORIES).flat().length} built-in words${customWords().length >= MIN_MINE ? " plus your own" : ""}. Add your spelling list under My words!</p>`;
+  $("mywords").onclick = showWordEditor;
   document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { g = { catChoice:b.dataset.c, streak:0, used:new Set() }; nextWord(); });
 }
 function nextWord() {
-  const cats = Object.keys(CATEGORIES);
-  const cat = g.catChoice === "*" ? pick(cats) : g.catChoice;
-  let pool = CATEGORIES[cat].filter(w => !g.used.has(w));
-  if (!pool.length) { g.used.clear(); pool = CATEGORIES[cat]; }
+  const all = pools();
+  const cat = g.catChoice === "*" ? pick(Object.keys(all)) : g.catChoice;
+  let pool = all[cat].filter(w => !g.used.has(w));
+  if (!pool.length) { g.used.clear(); pool = all[cat]; }
   const word = pick(pool); g.used.add(word);
   Object.assign(g, { cat, word, guessed:new Set(), wrong:0, hintUsed:false, over:false, msg:"" });
   render();
@@ -82,7 +83,7 @@ function render() {
     return `<button class="key${used ? (hit ? " hit" : " miss") : ""}" data-k="${c}" ${used || g.over ? "disabled" : ""}>${c}</button>`;
   }).join("");
   $("screen").innerHTML = `<div class="lane">${cells}</div>
-    <div class="cat">${g.cat} · ${g.word.length} letters · ${Math.max(0, LIVES - 1 - g.wrong)} mistakes left</div>
+    <div class="cat">${esc(g.cat)} · ${g.word.length} letters · ${Math.max(0, LIVES - 1 - g.wrong)} mistakes left</div>
     <div class="word" id="word">${word}</div>
     <div class="msg" id="msg">${g.msg}</div>
     <div class="keys">${keys}</div>
@@ -127,7 +128,17 @@ addEventListener("keydown", e => {
   else if (e.key === "Enter" && g.over) nextWord();
 });
 
-showStart();
+function showWordEditor() {
+  wordEditor({ el: $("screen"), key: MINE_KEY, min: 3, max: 14, minToPlay: MIN_MINE, normalize: w => w.toUpperCase(), exportName: "my-hangman-words.json",
+    intro: "Add words for the monster to chase you with, like your spelling list!", example: "e.g. because, friend, necessary", onBack: showStart });
+}
+
+$("screen").innerHTML = '<p class="muted center">Loading words…</p>';
+fetchJSON("words.json").then(data => {
+  CATEGORIES = data;
+  Object.entries(data).forEach(([cat, ws]) => ws.forEach(w => { if (!/^[A-Z]{3,14}$/.test(w)) console.warn("Bad word in " + cat + ": " + w); }));
+  showStart();
+}).catch(err => { console.error(err); $("screen").innerHTML = loadErrorHtml(err, "the word lists"); });
 </script>
 </body>
 </html>

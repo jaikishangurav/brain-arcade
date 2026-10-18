@@ -1,0 +1,5 @@
+{
+  "easy": ["sun","star","moon","rocket","brick","game","book","read","lava","cave","gold","tree","jump","fast","robot","bridge","magic","word","map","fish","space","sword","torch","build","coal","dig","wolf","lego","comet","cloud","dive","leaf","wave","rain","snow","wind","code","gear","ship","wing","flag","ruby","orbit","ice"],
+  "medium": ["planet","galaxy","diamond","creeper","library","science","gravity","builder","explore","castle","dragon","story","volcano","journey","puzzle","battery","pickaxe","machine","chapter","kingdom","meteor","crystal","engine","forest","rainbow","thunder","pirate","treasure","captain","compass","lantern","mystery","dolphin","penguin","blanket","monster","balance","freeze"],
+  "hard": ["telescope","adventure","astronaut","experiment","landscape","lightning","mysterious","architect","constellation","microscope","imagination","laboratory","encyclopedia","spaceship","gravitational","exploration","temperature","volcanic","dictionary","wilderness","waterfall","skyscraper","extraordinary","thunderstorm","electricity","environment"]
+}
