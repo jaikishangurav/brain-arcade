@@ -40,6 +40,13 @@
   .log li { list-style:none; padding:3px 0; font-size:14px; color:var(--muted); }
   .log li.found { color:var(--ink); }
   .log ul { margin:0; padding:0; }
+  .mini { background:var(--panel); color:var(--ink); border:2px solid #3a47a0; border-radius:10px; padding:5px 10px; font-size:14px; cursor:pointer; font-family:inherit; }
+  .mini:hover { border-color:var(--accent); }
+  .fld { width:100%; margin:4px 0; padding:8px 10px; border-radius:8px; border:2px solid #3a47a0; background:#0b1030; color:var(--ink); font-size:15px; font-family:inherit; }
+  .fld:focus { outline:none; border-color:var(--accent); }
+  .qlist { list-style:none; margin:8px 0 0; padding:0; font-size:14px; }
+  .qlist li { display:flex; gap:8px; align-items:center; padding:4px 0; border-top:1px solid #2a3260; }
+  .qlist li span { flex:1; }
   .hint { color:var(--muted); font-size:13px; margin:6px 2px 0; }
 </style>
 </head>
@@ -48,6 +55,7 @@
   <header>
     <h1>🚀 Planet Hopper</h1>
     <div class="hud">
+      <button class="mini" id="myq" title="Write your own questions">✏️ My questions</button>
       <div>⭐ <b id="score">0</b></div>
       <div class="fuel">Fuel <span id="f0"></span><span id="f1"></span><span id="f2"></span></div>
     </div>
@@ -67,73 +75,11 @@
 "use strict";
 const W = 800, H = 450;
 
-// q: question, a: [correct answer, ...wrong answers], e: explanation shown after answering
-const PLANETS = [
-  { id:"Mercury", color:"#a89c8c", fact:"Mercury is the closest planet to the Sun and has almost no atmosphere. Days are scorching and nights are freezing.",
-    qs:[ {q:"Which planet is closest to the Sun?", a:["Mercury","Venus","Mars","Earth"], e:"Mercury orbits closest to the Sun."},
-         {q:"A year on Mercury (one trip around the Sun) lasts about…", a:["88 Earth days","365 Earth days","12 Earth years","1 Earth day"], e:"Mercury is so close to the Sun that it zooms around in just 88 Earth days."} ] },
-  { id:"Venus", color:"#e6c27a", fact:"Venus is the hottest planet. Its thick carbon dioxide clouds trap heat, hotter than a pizza oven! It also spins backwards compared with most planets.",
-    qs:[ {q:"Which planet is the hottest, thanks to thick clouds that trap heat?", a:["Venus","Mercury","Mars","Neptune"], e:"Venus's thick atmosphere traps heat, making it hotter even than Mercury."},
-         {q:"Venus spins in a direction that is…", a:["Backwards compared with most planets","The same as Earth","Not at all","Side to side like a coin"], e:"Venus rotates backwards (retrograde), so the Sun rises in the west there."} ] },
-  { id:"Earth", color:"#3f7fd8", fact:"Earth is the only planet we know of with life. About 71% of its surface is covered by water.",
-    qs:[ {q:"About how much of Earth's surface is covered by water?", a:["About 71%","About 10%","About 30%","About 99%"], e:"Around 71% of Earth is water, which is why it looks blue from space."},
-         {q:"Which gas do plants make that we need to breathe?", a:["Oxygen","Helium","Methane","Neon"], e:"Plants make oxygen during photosynthesis."} ] },
-  { id:"Mars", color:"#c1623b", fact:"Mars is the Red Planet, coloured by rusty iron dust. It has Olympus Mons, the tallest volcano in the solar system, and two tiny moons.",
-    qs:[ {q:"Why is Mars called the Red Planet?", a:["Rusty iron dust covers it","It is very hot","It is covered in red oceans","It glows red"], e:"Iron in the soil has rusted, giving Mars its red colour."},
-         {q:"What is the name of the giant volcano on Mars, the tallest in the solar system?", a:["Olympus Mons","Mount Everest","Mauna Loa","Vesuvius"], e:"Olympus Mons is about 2.5 times taller than Mount Everest."},
-         {q:"What are the names of Mars's two moons?", a:["Phobos and Deimos","Titan and Europa","Io and Ganymede","Luna and Sol"], e:"Phobos and Deimos are small, lumpy moons."} ] },
-  { id:"Jupiter", color:"#d9a066", fact:"Jupiter is the biggest planet, more than 1,300 Earths could fit inside it. Its Great Red Spot is a storm bigger than Earth that has raged for hundreds of years.",
-    qs:[ {q:"Which is the largest planet in our solar system?", a:["Jupiter","Saturn","Earth","Neptune"], e:"Jupiter is bigger than all the other planets put together."},
-         {q:"The Great Red Spot on Jupiter is a giant…", a:["Storm","Volcano","Crater","Ocean"], e:"It is a huge storm, wider than Earth."} ] },
-  { id:"Saturn", color:"#e3cf9a", ring:true, fact:"Saturn's beautiful rings are made of billions of pieces of ice and rock. Saturn is so light for its size that it would float in a giant bathtub!",
-    qs:[ {q:"Saturn's rings are mostly made of…", a:["Ice and rock","Gas","Lava","Metal"], e:"The rings are billions of chunks of ice, from dust-sized to house-sized."},
-         {q:"Which planet is so light for its size that it could float in water?", a:["Saturn","Mercury","Earth","Mars"], e:"Saturn is mostly hydrogen and helium, so it is less dense than water."} ] },
-  { id:"Uranus", color:"#8fd8e0", fact:"Uranus spins on its side, like a rolling ball. It looks blue-green because of methane gas in its atmosphere.",
-    qs:[ {q:"What is unusual about the way Uranus spins?", a:["It is tilted on its side","It does not spin","It spins faster than any planet","It spins backwards every day"], e:"Uranus is tipped over so far that it rolls around the Sun on its side."},
-         {q:"Which gas gives Uranus its blue-green colour?", a:["Methane","Oxygen","Nitrogen","Neon"], e:"Methane absorbs red light, leaving the blue-green glow."} ] },
-  { id:"Neptune", color:"#3b5fd6", fact:"Neptune is the farthest planet from the Sun and has the fastest winds in the solar system, over 1,000 miles per hour!",
-    qs:[ {q:"Which planet is farthest from the Sun?", a:["Neptune","Uranus","Saturn","Jupiter"], e:"Neptune is the eighth and farthest planet."},
-         {q:"Which planet has the fastest winds in the solar system?", a:["Neptune","Earth","Venus","Mars"], e:"Neptune's winds can reach over 1,000 miles per hour."} ] },
-  // ---- bonus worlds (indices 8+). `pos` is where they sit on the route, so flight times make sense ----
-  { id:"Moon", sub:"Earth's moon", pos:2.3, color:"#b8b8bd", fact:"The Moon is Earth's only natural moon. Its gravity is about 1/6 of Earth's, and with no wind or rain, astronaut footprints stay there for a very long time.",
-    qs:[ {q:"About how long does the Moon take to orbit Earth?", a:["About a month","About a day","About a week","About a year"], e:"The Moon circles Earth roughly every 27 to 29 days. That is where the word \"month\" comes from."},
-         {q:"The large dark plains you can see on the Moon are called…", a:["Maria, which means seas","Oceans","Forests","Cloud shadows"], e:"Early astronomers thought they were seas. They are really ancient plains of cooled lava."},
-         {q:"How strong is the Moon's gravity compared with Earth's?", a:["About 1/6","The same","Twice as strong","There is none"], e:"On the Moon you would weigh only about one sixth of what you weigh on Earth."} ] },
-  { id:"Ceres", sub:"Dwarf planet", pos:3.5, color:"#8e8a84", fact:"Ceres is the biggest object in the asteroid belt and a dwarf planet. The Dawn spacecraft found mysterious bright spots on it made of salty minerals.",
-    qs:[ {q:"Ceres is a dwarf planet found in…", a:["The asteroid belt","The rings of Saturn","The far edge of the solar system","The Moon's orbit"], e:"Ceres lives in the asteroid belt between Mars and Jupiter."},
-         {q:"What did the Dawn spacecraft find shining on Ceres?", a:["Bright salty spots","Gold mines","Alien lights","Frozen lakes of lava"], e:"The bright spots in Occator crater are deposits of salts left behind when salty water froze and dried."} ] },
-  { id:"Europa", sub:"Moon of Jupiter", pos:4.3, color:"#e6e2d5", fact:"Europa is an icy moon of Jupiter. Under its frozen crust there may be a huge salty ocean, one of the best places to look for life beyond Earth.",
-    qs:[ {q:"Europa is a moon of which planet?", a:["Jupiter","Saturn","Mars","Neptune"], e:"Europa is one of Jupiter's four biggest moons."},
-         {q:"What may be hiding under Europa's icy shell?", a:["A huge salty ocean","A sea of lava","A forest","Nothing at all"], e:"Scientists think Europa holds more liquid water than all of Earth's oceans combined."} ] },
-  { id:"Titan", sub:"Moon of Saturn", pos:5.3, color:"#d98f3c", fact:"Titan is Saturn's biggest moon. It has a thick orange haze and lakes and rivers of liquid methane and ethane. It is the only moon with a thick atmosphere.",
-    qs:[ {q:"Titan is the biggest moon of which planet?", a:["Saturn","Jupiter","Uranus","Mars"], e:"Titan orbits Saturn and is bigger than the planet Mercury."},
-         {q:"What fills the lakes on Titan?", a:["Liquid methane and ethane","Water","Lava","Orange juice"], e:"It is so cold on Titan that gases like methane turn into liquid and form lakes."} ] },
-  { id:"Pluto", sub:"Dwarf planet", pos:7.8, color:"#c9a98a", fact:"Pluto is a dwarf planet far beyond Neptune. It has a giant heart-shaped glacier, and the New Horizons spacecraft flew past it in 2015.",
-    qs:[ {q:"What kind of world is Pluto?", a:["A dwarf planet","A star","A comet","A giant planet"], e:"In 2006 astronomers decided Pluto is a dwarf planet because it is small and shares its orbit with other icy objects."},
-         {q:"Which NASA spacecraft flew past Pluto in 2015?", a:["New Horizons","Voyager 1","Apollo 11","Perseverance"], e:"New Horizons travelled for nine years to reach Pluto and sent back amazing photos."} ] },
-];
-const MAIN_COUNT = 8;                       // Mercury..Neptune; everything after is a bonus world
+// Game data lives in data/planets.json and data/questions.json (see README for how to add more).
+// Question format: { q: question, a: [correct answer, ...wrong answers], e: explanation shown after answering }
+let PLANETS = [], GENERAL = [], MAIN_COUNT = 8;      // everything from the first "bonus" planet on is a bonus world
+let BASE = { general:[], destinations:{} };
 const posOf = i => PLANETS[i].pos ?? i;
-const GENERAL = [
-  {q:"What is at the centre of our solar system?", a:["The Sun","The Moon","Jupiter","A black hole"], e:"The Sun is a star, and everything else orbits around it."},
-  {q:"How many planets are in our solar system?", a:["8","7","9","10"], e:"There are eight planets, from Mercury to Neptune."},
-  {q:"What force keeps the planets orbiting the Sun?", a:["Gravity","Magnetism","Wind","Friction"], e:"The Sun's gravity pulls the planets so they curve around it instead of flying off."},
-  {q:"Where is the asteroid belt?", a:["Between Mars and Jupiter","Between Earth and Mars","Beyond Neptune","Between Mercury and Venus"], e:"Millions of rocky asteroids orbit between Mars and Jupiter."},
-  {q:"What is the name of our galaxy?", a:["The Milky Way","Andromeda","The Big Dipper","Orion"], e:"Our solar system is in the Milky Way galaxy."},
-  {q:"Why can't you hear sounds in space?", a:["There is no air to carry sound","It is too cold","Space is too bright","Sound travels too fast"], e:"Sound needs air (or another material) to travel through, and space is nearly empty."},
-  {q:"Who was the first person to walk on the Moon?", a:["Neil Armstrong","Buzz Lightyear","Yuri Gagarin","Elon Musk"], e:"Neil Armstrong stepped onto the Moon in 1969."},
-  {q:"About how long does sunlight take to reach Earth?", a:["About 8 minutes","About 8 seconds","About 8 hours","About 8 days"], e:"Light travels fast, but the Sun is far away: roughly 8 minutes."},
-  {q:"What is a shooting star really?", a:["A tiny space rock burning up in our atmosphere","A star falling down","A comet's tail","A far-away rocket"], e:"It is a meteor: a small bit of rock or dust glowing as it burns up high above Earth."},
-  {q:"What was the name of the first artificial satellite, launched in 1957?", a:["Sputnik 1","Apollo 11","Voyager","Hubble"], e:"The Soviet Union launched Sputnik 1 and started the space age."},
-  {q:"What do we call a pattern of stars, like Orion or the Big Dipper?", a:["A constellation","A galaxy","A nebula","A comet"], e:"People have drawn pictures in the stars, called constellations, for thousands of years."},
-  {q:"What is a black hole?", a:["A place where gravity is so strong not even light escapes","A hole in the Moon","A planet with no light","A dark cloud of dust"], e:"A black hole's gravity is so strong that nothing, not even light, can get out."},
-  {q:"What does the Moon's gravity cause on Earth's oceans?", a:["Tides","Hurricanes","Earthquakes","Waves of light"], e:"The Moon's pull makes the ocean rise and fall twice a day: the tides."},
-  {q:"What is the International Space Station?", a:["A science lab where astronauts live, orbiting Earth","A giant telescope on the Moon","A rocket launch pad","A base on Mars"], e:"The ISS circles Earth about every 90 minutes with astronauts on board."},
-  {q:"A comet is mostly made of…", a:["Ice, dust and rock","Pure gold","Hot gas only","Metal"], e:"Comets are dirty snowballs. Their glowing tails form when the Sun heats the ice."},
-  {q:"What is the name of the NASA rover that landed on Mars in 2021 with the Ingenuity helicopter?", a:["Perseverance","Curiosity","Sojourner","Opportunity"], e:"Perseverance landed in 2021, and Ingenuity became the first helicopter to fly on another planet."},
-  {q:"What is the Sun mostly made of?", a:["Hydrogen and helium","Fire","Rock and metal","Liquid lava"], e:"The Sun is a ball of hot hydrogen and helium gas. Hydrogen fuses into helium to make its light."},
-  {q:"What causes day and night on Earth?", a:["Earth spinning on its axis","The Sun moving around Earth","The Moon blocking the Sun","Earth moving closer and farther from the Sun"], e:"Earth turns once about every 24 hours, so each side faces the Sun, then faces away."},
-];
 
 // ---------- state ----------
 const $ = id => document.getElementById(id);
@@ -148,6 +94,7 @@ const persist = () => { try { localStorage.setItem("ph-save", JSON.stringify(sav
 let asked = new Set();
 const keys = {};
 
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 
 // ---------- DOM ----------
@@ -193,7 +140,7 @@ function pickQuestions(destIdx, n) {
 function askOne(q, title, done) {
   asked.add(q.q);
   const opts = shuffle(q.a.map((t,i) => ({t, ok:i===0})));
-  showBox(`<h2>${title}</h2><p style="font-size:17px;margin:4px 0 8px">${q.q}</p><div id="opts"></div><div id="fb"></div>`);
+  showBox(`<h2>${title}</h2><p style="font-size:17px;margin:4px 0 8px">${esc(q.q)}</p><div id="opts"></div><div id="fb"></div>`);
   const holder = $("opts");
   opts.forEach(o => {
     const b = document.createElement("button");
@@ -201,7 +148,7 @@ function askOne(q, title, done) {
     b.onclick = () => {
       holder.querySelectorAll(".opt").forEach((x,i) => { x.disabled = true; if (opts[i].ok) x.classList.add("right"); });
       if (!o.ok) b.classList.add("wrong");
-      $("fb").innerHTML = `<p class="muted">${o.ok ? "✅ Correct! " : "❌ Not quite. "}${q.e}</p><button class="go" id="nx">Next ▶</button>`;
+      $("fb").innerHTML = `<p class="muted">${o.ok ? "✅ Correct! " : "❌ Not quite. "}${esc(q.e || "")}</p><button class="go" id="nx">Next ▶</button>`;
       $("nx").onclick = () => done(o.ok);
     };
     holder.appendChild(b);
@@ -388,8 +335,87 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-renderHud(); renderMap(); renderLog();
-requestAnimationFrame(frame);
+// ---------- data loading + custom questions ----------
+const CUSTOM_KEY = "ph-custom";
+function loadCustom() {
+  try { const s = JSON.parse(localStorage.getItem(CUSTOM_KEY)); if (Array.isArray(s)) return s; } catch(e) {}
+  return [];
+}
+function saveCustom(list) { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); return true; } catch(e) { return false; } }
+function rebuildPools() {
+  const cust = loadCustom();
+  GENERAL = BASE.general.concat(cust.filter(c => !c.dest));
+  PLANETS.forEach(p => { p.qs = (BASE.destinations[p.id] || []).concat(cust.filter(c => c.dest === p.id)); });
+}
+function checkQuestion(q) {
+  if (!q || typeof q.q !== "string" || !q.q.trim()) return "missing question text";
+  if (!Array.isArray(q.a) || q.a.length < 2) return "needs at least 2 answers";
+  if (new Set(q.a.map(x => String(x).trim().toLowerCase())).size !== q.a.length) return "duplicate answers";
+  return null;
+}
+async function loadData() {
+  const get = async url => { const r = await fetch(url); if (!r.ok) throw new Error(url + " (" + r.status + ")"); return r.json(); };
+  const [planets, questions] = await Promise.all([get("data/planets.json"), get("data/questions.json")]);
+  PLANETS = planets; BASE = questions;
+  const bonus = PLANETS.findIndex(p => p.bonus);
+  MAIN_COUNT = bonus < 0 ? PLANETS.length : bonus;
+  const all = BASE.general.map(q => ["general", q]);
+  Object.entries(BASE.destinations).forEach(([id, qs]) => qs.forEach(q => all.push([id, q])));
+  all.forEach(([where, q]) => { const bad = checkQuestion(q); if (bad) console.warn("Bad question in " + where + ": " + bad, q); });
+  Object.keys(BASE.destinations).forEach(id => { if (!PLANETS.some(p => p.id === id)) console.warn("questions.json has questions for unknown destination: " + id); });
+}
+
+function showEditor(msg) {
+  if (mode !== "idle") return;
+  const custom = loadCustom();
+  showBox(`<h2>✏️ My questions</h2>
+    <p class="muted">Write your own question! It will pop up while refuelling, mixed in with the others.</p>
+    <input class="fld" id="eq" maxlength="200" placeholder="Your question">
+    <input class="fld" id="ea" maxlength="80" placeholder="✅ The right answer">
+    <input class="fld" id="ew1" maxlength="80" placeholder="❌ A wrong answer">
+    <input class="fld" id="ew2" maxlength="80" placeholder="❌ Another wrong answer (optional)">
+    <input class="fld" id="ew3" maxlength="80" placeholder="❌ One more wrong answer (optional)">
+    <input class="fld" id="ee" maxlength="200" placeholder="Fun fact to show after answering (optional)">
+    <select class="fld" id="ed"><option value="">Ask it on any trip</option>${PLANETS.map(p => `<option value="${esc(p.id)}">Only when going to ${esc(p.id)}</option>`).join("")}</select>
+    <div id="emsg" class="muted" style="min-height:22px">${msg || ""}</div>
+    <button class="go" id="eadd">Add question</button> <button class="go" id="eclose" style="background:#2a3470;color:#fff">Close</button>
+    ${custom.length ? `<h2 style="margin-top:16px">My ${custom.length} question${custom.length > 1 ? "s" : ""}</h2>
+      <ul class="qlist">${custom.map((c, i) => `<li><span>${esc(c.q)} <i class="muted">→ ${esc(c.a[0])}</i></span><button class="mini" data-del="${i}">🗑️</button></li>`).join("")}</ul>
+      <button class="mini" id="eexp" style="margin-top:8px">⬇️ Download as JSON</button>` : ""}`);
+  $("eclose").onclick = hideBox;
+  $("eadd").onclick = () => {
+    const v = id => $(id).value.trim();
+    const q = { q: v("eq"), a: [v("ea"), v("ew1"), v("ew2"), v("ew3")].filter(Boolean), e: v("ee") };
+    if ($("ed").value) q.dest = $("ed").value;
+    const bad = checkQuestion(q);
+    if (!v("ea")) return showEditor("Add the right answer first.");
+    if (bad) return showEditor("Hmm: " + (bad === "needs at least 2 answers" ? "add at least one wrong answer too." : bad === "duplicate answers" ? "every answer should be different." : "write the question first.") );
+    const list = loadCustom(); list.push(q);
+    showEditor(saveCustom(list) ? "✅ Added! It will show up on your next trip." : "Couldn't save in this browser.");
+    rebuildPools();
+  };
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const list = loadCustom(); list.splice(+b.dataset.del, 1); saveCustom(list); rebuildPools(); showEditor("Deleted."); });
+  if ($("eexp")) $("eexp").onclick = () => {
+    const out = { general:[], destinations:{} };
+    loadCustom().forEach(c => { const item = { q:c.q, a:c.a, e:c.e || "" }; if (c.dest) (out.destinations[c.dest] = out.destinations[c.dest] || []).push(item); else out.general.push(item); });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type:"application/json" }));
+    a.download = "my-questions.json"; a.click(); URL.revokeObjectURL(a.href);
+  };
+}
+$("myq").onclick = () => showEditor();
+
+loadData().then(() => {
+  rebuildPools(); renderHud(); renderMap(); renderLog();
+  requestAnimationFrame(frame);
+}).catch(err => {
+  console.error(err);
+  showBox(`<h2>😕 Couldn't load the game data</h2>
+    <p>${esc(err.message)}</p>
+    <p class="muted">If you opened <code>index.html</code> by double-clicking it, browsers block loading the data files. Start a small local server instead:</p>
+    <pre style="background:#0b1030;padding:8px;border-radius:8px">python3 -m http.server 8792</pre>
+    <p class="muted">Then open http://localhost:8792, or play the online version.</p>`);
+});
 </script>
 </body>
 </html>
