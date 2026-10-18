@@ -4,7 +4,7 @@ A collection of small educational browser games for kids. Each game is plain HTM
 
 | Game | What it teaches |
 | --- | --- |
-| Planet Hopper (separate repo, linked) | Space facts |
+| Planet Hopper | Space facts and the solar system |
 | Dungeon Math Quest | Addition, subtraction, times tables, division |
 | Word Wizard | Spelling and vocabulary |
 | Typing Racer | Typing speed and accuracy |
@@ -17,7 +17,7 @@ A collection of small educational browser games for kids. Each game is plain HTM
 
 Online (GitHub Pages): https://jaikishangurav.github.io/brain-arcade/
 
-Locally, serve the folder. The hub and the games that have their content inside the page can be opened straight from disk, but Word Wizard, Hangman Heroes, Typing Racer and Story Mixer load JSON files, which browsers block on `file://` pages, so use a server:
+Locally, serve the folder. The hub and the games that have their content inside the page can be opened straight from disk, but Planet Hopper, Word Wizard, Hangman Heroes, Typing Racer and Story Mixer load JSON files, which browsers block on `file://` pages, so use a server:
 
 ```bash
 python3 -m http.server 8800
@@ -36,10 +36,11 @@ games/<game-name>/    one folder per game, each with an index.html (and a data f
 
 ## Game data
 
-Four games keep their content in JSON files, so you can add more without touching the code:
+Five games keep their content in JSON files, so you can add more without touching the code:
 
 | File | Contents |
 | --- | --- |
+| `games/planet-hopper/data/` | `planets.json` (13 destinations) and `questions.json` (70 questions). See its own README |
 | `games/word-wizard/words.json` | A list of `{ "word", "category", "clue" }` entries (138 words) |
 | `games/hangman-heroes/words.json` | Category names mapped to lists of capital-letter words (120 words) |
 | `games/typing-racer/words.json` | `easy`, `medium` and `hard` lists of lowercase words (108 words) |
@@ -71,6 +72,7 @@ Each of these games has a screen for adding content in the browser. It is saved 
 
 | Game | Where | What he can add |
 | --- | --- | --- |
+| Planet Hopper | ✏️ My questions | Quiz questions with 2 to 4 answers, for any trip or one destination |
 | Word Wizard | ✏️ My words | Words with a category and clue. With 10 or more, he can play with only his own words |
 | Hangman Heroes | ✏️ My words | A spelling list. With 3 or more, a "⭐ My words" category appears |
 | Typing Racer | ✏️ My words | A spelling list. With 3 or more, a "⭐ My words" race appears |
@@ -88,4 +90,4 @@ Best scores are saved in the browser's local storage, with a separate key per ga
 
 ## Deploying to GitHub Pages
 
-Use the same Actions workflow as Planet Hopper: Settings → Pages → Source: GitHub Actions, then a workflow that uploads the repo root (`path: .`) and deploys on pushes to `main`.
+`.github/workflows/main.yml` publishes the whole repo to GitHub Pages on every push to `main`. It needs Settings → Pages → Source set to **GitHub Actions** (already done), and Pages on a private repo needs a paid plan. The site is at https://jaikishangurav.github.io/brain-arcade/.

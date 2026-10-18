@@ -1,18 +1,18 @@
 # Planet Hopper
 
-A space arcade game with a quiz. Pick a planet, answer questions to refuel, then fly through an asteroid field to get there. Visit all 8 planets to finish the Grand Tour, then explore the bonus moons and dwarf planets for the Deep Space Tour.
+A space arcade game with a quiz, part of [Brain Arcade](../../README.md). Pick a planet, answer questions to refuel, then fly through an asteroid field to get there. Visit all 8 planets to finish the Grand Tour, then explore the bonus moons and dwarf planets for the Deep Space Tour.
 
 ## Play
 
-Online (GitHub Pages): https://jaikishangurav.github.io/planet-hopper/
+Online: https://jaikishangurav.github.io/brain-arcade/games/planet-hopper/
 
-Locally, serve the folder and open it in a browser. The game loads its questions from `data/*.json`, and browsers block that when a page is opened straight from disk (`file://`), so double-clicking `index.html` will not work.
+Locally, serve the arcade folder (from the repo root) and open the game. It loads its questions from `data/*.json`, and browsers block that on pages opened straight from disk (`file://`), so double-clicking `index.html` will not work.
 
 ```bash
-python3 -m http.server 8792
+python3 -m http.server 8800
 ```
 
-Then visit http://localhost:8792. If the port is busy, use any other free port.
+Then visit http://localhost:8800/games/planet-hopper/.
 
 Controls: arrow keys or WASD, or drag with a finger or mouse.
 
@@ -54,14 +54,6 @@ Append an entry to `data/planets.json` and add a list for it under `destinations
 Click **✏️ My questions** at the top of the game to write questions in the browser: the question, the right answer, 1 to 3 wrong answers, an optional fun fact, and whether it appears on any trip or only for one destination. They are saved in this browser and mixed in with the built-in questions.
 
 Use **Download as JSON** to export them in the same format as `data/questions.json`, so they can be pasted into the data file and shared with everyone.
-
-## Deploying to GitHub Pages
-
-The game is a static site, so it is hosted on GitHub Pages with a GitHub Actions workflow (`.github/workflows/`).
-
-1. In the repo, go to Settings → Pages and set **Source** to **GitHub Actions**. Pages on private repos needs a paid GitHub plan, otherwise make the repo public.
-2. The workflow checks out the repo, runs `actions/configure-pages`, `actions/upload-pages-artifact` (with `path: .`) and `actions/deploy-pages`, on pushes to `main`. It needs `pages: write` and `id-token: write` permissions.
-3. Push to `main`. The site is published at `https://<your-username>.github.io/planet-hopper/`.
 
 ## Ideas for next steps
 

@@ -11,6 +11,8 @@
   .wrap { max-width:860px; margin:0 auto; padding:10px 12px 24px; }
   header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   h1 { margin:0; font-size:22px; }
+  .back { color:var(--muted); text-decoration:none; font-size:15px; }
+  .back:hover { color:var(--ink); }
   .hud { margin-left:auto; display:flex; gap:14px; align-items:center; font-size:16px; }
   .fuel span { display:inline-block; width:22px; height:14px; margin-left:3px; border-radius:3px; background:#2a3260; vertical-align:middle; }
   .fuel span.on { background:var(--good); }
@@ -53,6 +55,7 @@
 <body>
 <div class="wrap">
   <header>
+    <a class="back" href="../../">← Arcade</a>
     <h1>🚀 Planet Hopper</h1>
     <div class="hud">
       <button class="mini" id="myq" title="Write your own questions">✏️ My questions</button>
@@ -413,8 +416,8 @@ loadData().then(() => {
   showBox(`<h2>😕 Couldn't load the game data</h2>
     <p>${esc(err.message)}</p>
     <p class="muted">If you opened <code>index.html</code> by double-clicking it, browsers block loading the data files. Start a small local server instead:</p>
-    <pre style="background:#0b1030;padding:8px;border-radius:8px">python3 -m http.server 8792</pre>
-    <p class="muted">Then open http://localhost:8792, or play the online version.</p>`);
+    <pre style="background:#0b1030;padding:8px;border-radius:8px">python3 -m http.server 8800</pre>
+    <p class="muted">Run it in the arcade folder, then open http://localhost:8800/games/planet-hopper/ or play the online version.</p>`);
 });
 </script>
 </body>
