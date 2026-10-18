@@ -23,6 +23,11 @@
   .tile.used { visibility:hidden; }
   .timer { height:8px; border-radius:4px; background:#2a3260; overflow:hidden; margin:8px 0; }
   .timer > i { display:block; height:100%; background:var(--accent); width:100%; }
+  .fld { width:100%; margin:5px 0; padding:9px 11px; border-radius:10px; border:2px solid #3a47a0; background:#0b1030; color:var(--ink); font-size:16px; font-family:inherit; }
+  .fld:focus { outline:none; border-color:var(--accent); }
+  .wlist { list-style:none; margin:6px 0 10px; padding:0; font-size:15px; }
+  .wlist li { display:flex; gap:8px; align-items:center; padding:5px 0; border-top:1px solid #2a3260; }
+  .wlist li span { flex:1; }
   .msg { min-height:26px; text-align:center; font-size:17px; }
 </style>
 </head>
@@ -33,37 +38,17 @@
     <h1>🧙 Word Wizard</h1>
     <div class="hud" id="hud"></div>
   </header>
-  <div class="card" id="screen"></div>
+  <div class="card" id="screen"><p class="muted center">Loading the spell book…</p></div>
 </div>
 
 <script>
 "use strict";
-// [word, category, clue]
-const WORDS = [
-  ["ATOM","Science","The tiny building block of everything"],["COMET","Space","An icy ball with a glowing tail"],["ORBIT","Space","The path a planet takes around the Sun"],
-  ["TIGER","Animals","A big striped cat"],["EAGLE","Animals","A bird of prey with sharp eyes"],["PANDA","Animals","A black and white bear that eats bamboo"],
-  ["PLANT","Science","It grows from a seed and makes oxygen"],["ANVIL","Fantasy","A smith hammers hot metal on it"],["TORCH","Adventure","Lights up a dark cave"],
-  ["STORY","Books","Characters and a plot, told in words"],["BRICK","Building","A block you build walls with"],["BUILD","Building","To make something piece by piece"],
-  ["ROBOT","Technology","A machine that follows programs"],["TOWER","Building","A tall, narrow structure"],
-  ["MAGNET","Science","It pulls iron toward it"],["ROCKET","Space","It blasts astronauts into orbit"],["PLANET","Space","A world that circles a star"],
-  ["GALAXY","Space","Billions of stars held together by gravity"],["METEOR","Space","A shooting star"],["SATURN","Space","The planet with famous rings"],
-  ["ENERGY","Science","The power to make things move or glow"],["OXYGEN","Science","The gas we breathe in"],["FOSSIL","Science","An ancient animal's remains in rock"],
-  ["ZOMBIE","Fantasy","A spooky undead monster"],["CASTLE","Fantasy","A knight's stone fortress"],["KNIGHT","Fantasy","A brave warrior in armour"],
-  ["WIZARD","Fantasy","Casts spells with a wand"],["POTION","Fantasy","A magical drink in a bottle"],["DRAGON","Fantasy","A fire-breathing flying beast"],
-  ["AUTHOR","Books","The person who writes a book"],["ENGINE","Technology","The part that makes a car go"],["BRIDGE","Building","It lets you cross a river"],["TURTLE","Animals","A reptile that carries its shell"],
-  ["GRAVITY","Science","The force that pulls things down"],["VOLCANO","Science","A mountain that erupts lava"],["CRYSTAL","Science","A sparkly mineral with flat faces"],
-  ["BATTERY","Technology","It stores electricity"],["CREEPER","Fantasy","A green hissing explosive monster"],["DIAMOND","Adventure","The hardest, shiniest gem"],
-  ["PICKAXE","Adventure","A miner's digging tool"],["LIBRARY","Books","A building full of books to borrow"],["CHAPTER","Books","A section of a book"],
-  ["MYSTERY","Books","A story where you solve a puzzle"],["DOLPHIN","Animals","A clever ocean mammal that clicks and whistles"],
-  ["GIRAFFE","Animals","The tallest animal on land"],["PENGUIN","Animals","A bird that swims but cannot fly"],["OCTOPUS","Animals","It has eight arms"],
-  ["CHEETAH","Animals","The fastest land animal"],["ECLIPSE","Space","When the Moon hides the Sun"],
-  ["SKELETON","Fantasy","A walking pile of bones"],["VILLAGER","Adventure","Someone who lives in a small town"],["TREASURE","Adventure","What pirates bury and hunt for"],
-  ["ELEPHANT","Animals","The biggest land animal, with a trunk"],["KANGAROO","Animals","It carries its baby in a pouch"],["ASTEROID","Space","A rocky chunk orbiting the Sun"],
-  ["MOLECULE","Science","Two or more atoms joined together"],["ADVENTURE","Books","An exciting journey full of surprises"],
-  ["ASTRONAUT","Space","A person who travels to space"],["TELESCOPE","Space","It makes faraway stars look closer"],["LIGHTNING","Science","A giant spark in a storm"],
-];
+// Words live in words.json as { "word": "ATOM", "category": "Science", "clue": "..." } (see README).
+// In memory each word is [WORD, category, clue].
+let BASE_WORDS = [], WORDS = [];
 const ROUNDS = 10, TIME = 35;
 const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 
 let best = 0;
@@ -71,10 +56,11 @@ try { best = parseInt(localStorage.getItem("ww-best"), 10) || 0; } catch(e) {}
 
 let g = null, tick = null;
 
-function pickWord(round, used) {
+function pickWord(round, used, source) {
   const band = round < 3 ? w => w[0].length <= 5 : round < 6 ? w => w[0].length === 6 : w => w[0].length >= 7;
-  const pool = WORDS.filter(w => band(w) && !used.has(w[0]));
-  return shuffle(pool.length ? pool : WORDS.filter(w => !used.has(w[0])))[0];
+  const pool = source.filter(w => band(w) && !used.has(w[0]));
+  const left = source.filter(w => !used.has(w[0]));
+  return shuffle(pool.length ? pool : left.length ? left : source)[0];
 }
 function scramble(word) {
   let s; do { s = shuffle(word.split("")); } while (s.join("") === word);
@@ -86,18 +72,24 @@ function renderHud() {
 }
 function showStart() {
   g = null; renderHud(); clearInterval(tick);
+  const mine = customWords();
+  if (mine.length < 10) onlyMine = false;
   $("screen").innerHTML = `<div class="center"><div style="font-size:72px">🧙✨</div><h2 style="margin-top:0">Unscramble the spell words!</h2>
     <p class="muted">Letters are jumbled. Tap them (or type) to spell the secret word and zap the goblin. Longer words are worth more. Use 💡 if you get stuck, but it costs points!</p>
-    <button class="btn" id="go">Start casting ✨</button><p class="muted">Best score: ⭐ ${best}</p></div>`;
+    ${mine.length >= 10 ? `<p><label><input type="checkbox" id="only" ${onlyMine ? "checked" : ""}> Use only <b>my own words</b> (${mine.length})</label></p>` : ""}
+    <div class="row"><button class="btn" id="go">Start casting ✨</button><button class="btn alt" id="mywords">✏️ My words (${mine.length})</button></div>
+    <p class="muted">${WORDS.length} words in the spell book · Best score: ⭐ ${best}</p></div>`;
   $("go").onclick = start;
+  $("mywords").onclick = showEditor;
+  if ($("only")) $("only").onchange = e => { onlyMine = e.target.checked; };
 }
 function start() {
-  g = { round:0, score:0, streak:0, used:new Set(), solved:0 };
+  g = { round:0, score:0, streak:0, used:new Set(), solved:0, source:onlyMine ? customWords().map(toWord) : WORDS };
   nextWord();
 }
 function nextWord() {
   if (g.round >= ROUNDS) return finish();
-  const [word, cat, clue] = pickWord(g.round, g.used);
+  const [word, cat, clue] = pickWord(g.round, g.used, g.source);
   g.used.add(word);
   Object.assign(g, { word, cat, clue, tiles:scramble(word), ans:[], locked:0, hints:0, wrong:0, left:TIME, over:false, msg:"" });
   render();
@@ -120,8 +112,8 @@ function render() {
   $("screen").innerHTML = `
     <div class="stage"><div class="goblin" id="gob">👺</div>
       <div class="bar"><i style="width:${(1 - g.solved / ROUNDS) * 100}%"></i></div></div>
-    <div class="cat">${g.cat} · ${g.word.length} letters</div>
-    <div class="clue">${g.clue}</div>
+    <div class="cat">${esc(g.cat)} · ${g.word.length} letters</div>
+    <div class="clue">${esc(g.clue)}</div>
     <div class="timer"><i id="tm" style="width:${g.left / TIME * 100}%"></i></div>
     <div class="slots" id="slots">${slots}</div>
     <div class="tiles" id="tiles">${tiles}</div>
@@ -200,7 +192,72 @@ addEventListener("keydown", e => {
   }
 });
 
-showStart();
+// ---------- data loading + custom words ----------
+const CUSTOM_KEY = "ww-custom";
+let onlyMine = false;
+const toWord = o => [o.word.toUpperCase(), o.category || "My words", o.clue];
+function customWords() {
+  try { const s = JSON.parse(localStorage.getItem(CUSTOM_KEY)); if (Array.isArray(s)) return s; } catch(e) {}
+  return [];
+}
+function saveCustom(list) { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); return true; } catch(e) { return false; } }
+function rebuildWords() { WORDS = BASE_WORDS.concat(customWords().map(toWord)); }
+function checkWord(o) {
+  if (!o || typeof o.word !== "string" || !/^[A-Za-z]{3,12}$/.test(o.word)) return "the word must be 3 to 12 letters (A-Z only)";
+  if (typeof o.clue !== "string" || !o.clue.trim()) return "missing clue";
+  if (o.clue.toUpperCase().includes(o.word.toUpperCase())) return "the clue contains the word";
+  return null;
+}
+async function loadWords() {
+  const r = await fetch("words.json");
+  if (!r.ok) throw new Error("words.json (" + r.status + ")");
+  const data = await r.json();
+  const seen = new Set();
+  data.forEach(o => { const bad = checkWord(o); if (bad) console.warn("Bad word entry " + JSON.stringify(o) + ": " + bad); if (seen.has(o.word)) console.warn("Duplicate word: " + o.word); seen.add(o.word); });
+  BASE_WORDS = data.map(toWord);
+}
+
+function showEditor(msg) {
+  clearInterval(tick);
+  const list = customWords();
+  const cats = [...new Set(WORDS.map(w => w[1]))].sort();
+  $("screen").innerHTML = `<h2 style="margin-top:0">✏️ My words</h2>
+    <p class="muted">Add your own spell words! Pick a word and write a clue that doesn't use the word itself.</p>
+    <input class="fld" id="nw" maxlength="12" placeholder="The secret word (3 to 12 letters)" autocomplete="off" autocapitalize="characters">
+    <input class="fld" id="nc" maxlength="24" list="cats" placeholder="Category (e.g. Space, Animals, My words)" autocomplete="off">
+    <datalist id="cats">${cats.map(c => `<option value="${esc(c)}">`).join("")}</datalist>
+    <input class="fld" id="nl" maxlength="120" placeholder="Clue: describe it without saying it" autocomplete="off">
+    <div id="nm" class="msg">${msg || ""}</div>
+    <div class="row" style="justify-content:flex-start"><button class="btn" id="nadd">Add word</button><button class="btn alt" id="nback">⬅️ Back</button></div>
+    ${list.length ? `<h3>My ${list.length} word${list.length > 1 ? "s" : ""}</h3>
+      <ul class="wlist">${list.map((c, i) => `<li><span><b>${esc(c.word.toUpperCase())}</b> <i class="muted">${esc(c.category || "My words")} · ${esc(c.clue)}</i></span><button class="chip" data-del="${i}">🗑️</button></li>`).join("")}</ul>
+      <button class="btn alt" id="nexp" style="font-size:14px;padding:6px 12px">⬇️ Download as JSON</button>` : ""}`;
+  $("nback").onclick = showStart;
+  $("nadd").onclick = () => {
+    const o = { word: $("nw").value.trim().toUpperCase(), category: $("nc").value.trim() || "My words", clue: $("nl").value.trim() };
+    if (!/^[A-Z]{3,12}$/.test(o.word)) return showEditor("Use only letters (A to Z): 3 to 12 of them.");
+    if (WORDS.some(w => w[0] === o.word)) return showEditor("That word is already in the spell book!");
+    if (!o.clue) return showEditor("Write a clue so the wizard can help.");
+    if (o.clue.toUpperCase().includes(o.word)) return showEditor("Oops, the clue gives the word away. Describe it without using it!");
+    const l = customWords(); l.push(o);
+    const ok = saveCustom(l); rebuildWords();
+    showEditor(ok ? `<span class="good">✅ ${esc(o.word)} added!</span>` : "Couldn't save in this browser.");
+  };
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const l = customWords(); l.splice(+b.dataset.del, 1); saveCustom(l); rebuildWords(); showEditor("Deleted."); });
+  if ($("nexp")) $("nexp").onclick = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(customWords().map(c => ({ word:c.word.toUpperCase(), category:c.category || "My words", clue:c.clue })), null, 2)], { type:"application/json" }));
+    a.download = "my-words.json"; a.click(); URL.revokeObjectURL(a.href);
+  };
+}
+
+loadWords().then(() => { rebuildWords(); showStart(); }).catch(err => {
+  console.error(err);
+  $("screen").innerHTML = `<div class="center"><h2>😕 Couldn't load the words</h2><p>${esc(err.message)}</p>
+    <p class="muted">If you opened this page by double-clicking the file, browsers block loading <code>words.json</code>. Start a local server from the arcade folder:</p>
+    <pre style="background:#0b1030;padding:8px;border-radius:8px;display:inline-block">python3 -m http.server 8800</pre>
+    <p class="muted">Then open http://localhost:8800/games/word-wizard/ or play the online version.</p></div>`;
+});
 </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # Brain Arcade
 
-A collection of small educational browser games for kids. Each game is a single HTML file with no build step.
+A collection of small educational browser games for kids. Each game is plain HTML, CSS and JavaScript with no build step.
 
 | Game | What it teaches |
 | --- | --- |
@@ -15,7 +15,9 @@ A collection of small educational browser games for kids. Each game is a single 
 
 ## Play
 
-Double-click `index.html`, or serve the folder:
+Online (GitHub Pages): https://jaikishangurav.github.io/brain-arcade/
+
+Locally, serve the folder. Most games also work when `index.html` is opened straight from disk, but Word Wizard loads `words.json`, which browsers block on `file://` pages, so use a server:
 
 ```bash
 python3 -m http.server 8800
@@ -30,6 +32,26 @@ index.html            hub page listing every game
 shared.css            shared colours, buttons and animations
 games/<game-name>/    one folder per game, each with an index.html
 ```
+
+## Game data
+
+Word Wizard keeps its words in a JSON file so you can add more without touching the code.
+
+| File | Contents |
+| --- | --- |
+| `games/word-wizard/words.json` | A list of `{ "word", "category", "clue" }` entries (138 words today) |
+
+To add a word, append an entry such as:
+
+```json
+{ "word": "NEBULA", "category": "Space", "clue": "A giant cloud of gas and dust where stars are born" }
+```
+
+Rules: the word is 3 to 12 capital letters, it appears only once, and the clue must not contain the word. Words are grouped by length into easy (up to 5 letters), medium (6) and hard (7 or more), and a game starts easy and gets harder. Problems with an entry are reported in the browser console.
+
+### Writing your own words
+
+Click **✏️ My words** on the Word Wizard start screen to add words in the browser. They are saved in this browser and mixed in with the built-in ones. Once there are 10 or more, an option appears to play with only your own words. **Download as JSON** exports them in the same format as `words.json`, ready to be pasted into the file.
 
 ## Adding a game
 
