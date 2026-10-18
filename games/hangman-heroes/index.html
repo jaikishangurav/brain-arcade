@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hangman Heroes</title>
+<link rel="stylesheet" href="../../shared.css">
+<style>
+  .lane { display:grid; grid-template-columns:repeat(8, 1fr); background:linear-gradient(#2a3a7a, #3d2a6a); border-radius:14px; padding:10px 4px; text-align:center; align-items:center; }
+  .lane > div { font-size:clamp(26px, 7vw, 48px); min-height:56px; display:flex; align-items:center; justify-content:center; border-bottom:3px dashed #ffffff22; }
+  .cat { text-align:center; color:var(--accent); margin:12px 0 0; font-size:15px; }
+  .word { text-align:center; font-size:clamp(28px, 8vw, 46px); font-weight:bold; letter-spacing:.18em; margin:8px 0; font-family:"Courier New", monospace; min-height:60px; word-break:break-all; }
+  .word .miss { color:var(--bad); }
+  .keys { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:8px; }
+  .key { width:42px; height:46px; border-radius:10px; border:0; background:var(--panel2); color:var(--ink); font-size:20px; font-weight:bold; cursor:pointer; font-family:inherit; }
+  .key:hover:not(:disabled) { background:#3a4890; }
+  .key.hit { background:#1f6b3a; }
+  .key.miss { background:#7a2a2a; }
+  .key:disabled { cursor:default; }
+  .msg { min-height:26px; text-align:center; font-size:17px; margin-top:8px; }
+  .cats { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; margin-top:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="../../">← Arcade</a>
+    <h1>🦸 Hangman Heroes</h1>
+    <div class="hud" id="hud"></div>
+  </header>
+  <div class="card" id="screen"></div>
+</div>
+
+<script>
+"use strict";
+const CATEGORIES = {
+  "🪐 Space":    ["MARS","JUPITER","NEBULA","SUPERNOVA","UNIVERSE","SATELLITE","COSMOS","ASTRONOMY","MOONLIGHT","WORMHOLE","STARSHIP","ORBITER","SUNSPOT","LAUNCHPAD"],
+  "🐾 Animals":  ["LEOPARD","HEDGEHOG","FLAMINGO","SQUIRREL","CROCODILE","BUTTERFLY","PORCUPINE","ALLIGATOR","GORILLA","PEACOCK","SEAHORSE","WALRUS","OSTRICH","CHAMELEON"],
+  "🐉 Fantasy":  ["UNICORN","GOBLIN","SORCERER","PHOENIX","DUNGEON","ENCHANTED","GRIFFIN","WARRIOR","MERMAID","DRAGONFLY","WIZARDRY","POTIONS","CRYSTALS","CAULDRON"],
+  "🔬 Science":  ["ELECTRON","GLACIER","MAGNETIC","HURRICANE","DINOSAUR","ECOSYSTEM","BIOLOGY","CHEMISTRY","FRICTION","VOLTAGE","RAINFOREST","TORNADO","MICROSCOPE","EXPERIMENT"],
+  "📚 Books":    ["DETECTIVE","ILLUSTRATOR","BOOKWORM","NOVEL","POETRY","LEGEND","CHARACTER","FAIRYTALE","BESTSELLER","SEQUEL","VILLAIN","LIBRARIAN","ADVENTURE","BOOKMARK"],
+  "🧱 Building": ["BLUEPRINT","SKYSCRAPER","FOUNDATION","MINIFIGURE","BASEPLATE","WORKSHOP","CONSTRUCTION","ARCHITECT","STRUCTURE","TUNNEL","DRAWBRIDGE","FORTRESS","SCAFFOLD","BULLDOZER"],
+};
+const LIVES = 6, LANE = 8;     // monster starts at cell 7; hero at cell 0; 6 wrong guesses and it reaches the hero
+const $ = id => document.getElementById(id);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+let stats = { best:0 };
+try { const s = JSON.parse(localStorage.getItem("hh-stats")); if (s && typeof s.best === "number") stats = s; } catch(e) {}
+const saveStats = () => { try { localStorage.setItem("hh-stats", JSON.stringify(stats)); } catch(e) {} };
+
+let g = null;   // { cat, streak, word, cat, guessed:Set, wrong, hintUsed, over }
+
+function renderHud() {
+  $("hud").innerHTML = g ? `<span>🛡️ Saved: ${g.streak}</span><span>🏆 Best: ${stats.best}</span>` : `<span class="muted">Best streak: 🏆 ${stats.best}</span>`;
+}
+function showStart() {
+  g = null; renderHud();
+  $("screen").innerHTML = `<h2 style="margin-top:0">Save the village!</h2>
+    <p class="muted">A monster is marching toward the hero. Guess the secret word one letter at a time. Each wrong letter brings the monster a step closer, and you can afford 5 mistakes. Save the hero and build a streak!</p>
+    <div class="cats">${Object.keys(CATEGORIES).map(k => `<button class="btn alt" data-c="${k}">${k}</button>`).join("")}<button class="btn" data-c="*">🎲 Surprise me</button></div>`;
+  document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { g = { catChoice:b.dataset.c, streak:0, used:new Set() }; nextWord(); });
+}
+function nextWord() {
+  const cats = Object.keys(CATEGORIES);
+  const cat = g.catChoice === "*" ? pick(cats) : g.catChoice;
+  let pool = CATEGORIES[cat].filter(w => !g.used.has(w));
+  if (!pool.length) { g.used.clear(); pool = CATEGORIES[cat]; }
+  const word = pick(pool); g.used.add(word);
+  Object.assign(g, { cat, word, guessed:new Set(), wrong:0, hintUsed:false, over:false, msg:"" });
+  render();
+}
+
+function render() {
+  renderHud();
+  const monster = LANE - 1 - g.wrong;      // cell index of the monster
+  const cells = Array.from({length:LANE}, (_, i) =>
+    `<div>${i === 0 ? (g.over === "lose" ? "😵" : g.over === "win" ? "🎉" : "🦸") : i === monster ? (g.over === "win" ? "💨" : "👹") : ""}</div>`).join("");
+  const word = g.word.split("").map(c => g.guessed.has(c) ? c : g.over === "lose" ? `<span class="miss">${c}</span>` : "_").join(" ");
+  const keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(c => {
+    const used = g.guessed.has(c), hit = used && g.word.includes(c);
+    return `<button class="key${used ? (hit ? " hit" : " miss") : ""}" data-k="${c}" ${used || g.over ? "disabled" : ""}>${c}</button>`;
+  }).join("");
+  $("screen").innerHTML = `<div class="lane">${cells}</div>
+    <div class="cat">${g.cat} · ${g.word.length} letters · ${Math.max(0, LIVES - 1 - g.wrong)} mistakes left</div>
+    <div class="word" id="word">${word}</div>
+    <div class="msg" id="msg">${g.msg}</div>
+    <div class="keys">${keys}</div>
+    <div class="row" style="margin-top:12px">${g.over ? `<button class="btn" id="nx">${g.over === "win" ? "Next monster ▶" : "Try a new word"}</button>` : `<button class="btn alt" id="hint" ${g.hintUsed ? "disabled" : ""}>💡 Reveal a letter (costs a step)</button>`}<button class="btn alt" id="menu">Change category</button></div>`;
+  document.querySelectorAll(".key").forEach(b => b.onclick = () => guess(b.dataset.k));
+  if ($("hint")) $("hint").onclick = hint;
+  if ($("nx")) { $("nx").onclick = nextWord; $("nx").focus(); }
+  $("menu").onclick = showStart;
+}
+
+function afterMove() {
+  const complete = g.word.split("").every(c => g.guessed.has(c));
+  if (complete) {
+    g.over = "win"; g.streak++;
+    if (g.streak > stats.best) { stats.best = g.streak; saveStats(); }
+    g.msg = `<span class="good">🎉 You saved the hero! The word was ${g.word}.</span>`;
+  } else if (g.wrong >= LIVES) {
+    g.over = "lose"; g.streak = 0;
+    g.msg = `<span class="bad">💥 The monster got there! The word was ${g.word}.</span>`;
+  }
+  render();
+}
+function guess(c) {
+  if (!g || g.over || g.guessed.has(c)) return;
+  g.guessed.add(c);
+  if (g.word.includes(c)) g.msg = `✅ Yes! There's a ${c}.`;
+  else { g.wrong++; g.msg = `❌ No ${c}. The monster steps closer!`; }
+  afterMove();
+}
+function hint() {
+  if (g.over || g.hintUsed) return;
+  const hidden = g.word.split("").filter(c => !g.guessed.has(c));
+  if (hidden.length <= 1) return;
+  g.hintUsed = true; g.guessed.add(pick(hidden)); g.wrong++;
+  g.msg = "💡 A letter was revealed, but the monster moved closer.";
+  afterMove();
+}
+
+addEventListener("keydown", e => {
+  if (!g || !g.word || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^[a-z]$/i.test(e.key)) guess(e.key.toUpperCase());
+  else if (e.key === "Enter" && g.over) nextWord();
+});
+
+showStart();
+</script>
+</body>
+</html>

@@ -8,7 +8,9 @@ A collection of small educational browser games for kids. Each game is a single 
 | Dungeon Math Quest | Addition, subtraction, times tables, division |
 | Word Wizard | Spelling and vocabulary |
 | Typing Racer | Typing speed and accuracy |
-| Number Bridge Builder, Hangman Heroes, Pattern Detective | Coming soon |
+| Number Bridge Builder | Missing-number equations, including two-step puzzles |
+| Hangman Heroes | Vocabulary and spelling (monster-chase style, no gallows) |
+| Pattern Detective | Spotting rules in shape and number sequences |
 
 ## Play
 

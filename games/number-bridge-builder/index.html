@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Number Bridge Builder</title>
+<link rel="stylesheet" href="../../shared.css">
+<style>
+  .scene { background:linear-gradient(#8ed1ff, #cfeeff 55%, #2e7fd1 55%); border-radius:14px; padding:8px 4px 4px; }
+  .grid { display:grid; grid-template-columns:repeat(10, 1fr); text-align:center; align-items:end; }
+  .grid > div { font-size:clamp(18px, 4.5vw, 34px); min-height:44px; display:flex; align-items:center; justify-content:center; }
+  .hero { transition:none; }
+  .plank { background:#a8742c; border:2px solid #6e4a18; border-radius:6px; color:#fff; font-weight:bold; font-size:clamp(12px, 3vw, 20px) !important; min-height:34px !important; margin:0 1px; }
+  .water { color:#fff9; font-size:clamp(14px, 3vw, 22px) !important; }
+  .eq { font-size:clamp(30px, 8vw, 52px); text-align:center; font-weight:bold; margin:16px 0 6px; letter-spacing:1px; }
+  .eq .q { color:var(--accent); display:inline-block; min-width:1.2em; border-bottom:4px solid var(--accent); }
+  .stones { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:14px 0; }
+  .stone { width:84px; height:64px; border-radius:50% / 55%; border:0; background:#8a8f9e; color:#fff; font-size:28px; font-weight:bold; cursor:pointer; box-shadow:0 5px 0 #5c606c; font-family:inherit; }
+  .stone:hover:not(:disabled) { background:#a2a8ba; }
+  .stone:disabled { opacity:.3; cursor:default; }
+  .msg { min-height:26px; text-align:center; font-size:17px; }
+  .rivers { display:grid; gap:10px; margin-top:12px; }
+  .rivers .btn { text-align:left; }
+  .rivers small { display:block; font-weight:normal; opacity:.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="../../">← Arcade</a>
+    <h1>🌉 Number Bridge Builder</h1>
+    <div class="hud" id="hud"></div>
+  </header>
+  <div class="card" id="screen"></div>
+</div>
+
+<script>
+"use strict";
+const PLANKS = 8, LIVES = 3;
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+// Each generator returns { text: "... ? ...", ans }
+const RIVERS = {
+  creek: { name:"Creek", note:"Add and subtract", gens: [
+    () => { const a = rnd(2,20), b = rnd(2,20); return { text:`${a} + ? = ${a+b}`, ans:b }; },
+    () => { const a = rnd(2,20), b = rnd(2,20); return { text:`? + ${b} = ${a+b}`, ans:a }; },
+    () => { const a = rnd(2,25), b = rnd(2,25); return { text:`${a+b} − ? = ${a}`, ans:b }; },
+    () => { const a = rnd(5,40), b = rnd(2,a-1); return { text:`${a} − ${b} = ?`, ans:a-b }; },
+  ]},
+  river: { name:"River", note:"Times tables and division", gens: [
+    () => { const a = rnd(2,12), b = rnd(2,12); return { text:`${a} × ? = ${a*b}`, ans:b }; },
+    () => { const a = rnd(2,12), b = rnd(2,12); return { text:`? × ${b} = ${a*b}`, ans:a }; },
+    () => { const a = rnd(2,12), b = rnd(2,12); return { text:`${a*b} ÷ ? = ${a}`, ans:b }; },
+    () => { const a = rnd(2,12), b = rnd(2,12); return { text:`? ÷ ${b} = ${a}`, ans:a*b }; },
+  ]},
+  ocean: { name:"Ocean", note:"Two-step puzzles", gens: [
+    () => { const a = rnd(2,9), b = rnd(2,9), c = rnd(1, a*b-1); return { text:`${a} × ${b} − ? = ${c}`, ans:a*b-c }; },
+    () => { const a = rnd(5,30), b = rnd(5,30), x = rnd(3,30); return { text:`${a} + ${b} + ? = ${a+b+x}`, ans:x }; },
+    () => { const a = rnd(2,9), b = rnd(2,9), x = rnd(2,20); return { text:`${a} × ${b} + ? = ${a*b+x}`, ans:x }; },
+    () => { const b = rnd(2,9), q = rnd(2,9), a = rnd(2,20); return { text:`? ÷ ${b} + ${a} = ${q+a}`, ans:b*q }; },
+  ]},
+};
+
+let best = {};
+try { const s = JSON.parse(localStorage.getItem("nbb-best")); if (s && typeof s === "object") best = s; } catch(e) {}
+const saveBest = () => { try { localStorage.setItem("nbb-best", JSON.stringify(best)); } catch(e) {} };
+
+let r = null;
+
+function makeStones(ans) {
+  const pool = new Set();
+  [1,-1,2,-2,10,-10,5,3].forEach(d => { if (ans + d >= 0 && ans + d !== ans) pool.add(ans + d); });
+  return shuffle([ans, ...shuffle([...pool]).slice(0, 3)]);
+}
+function nextEquation() {
+  let eq, tries = 0;
+  do { eq = pick(RIVERS[r.river].gens)(); } while (r.last === eq.text && ++tries < 5);
+  r.last = eq.text; r.eq = eq; r.stones = makeStones(eq.ans); r.dead = new Set(); r.filled = null;
+}
+
+function renderHud() {
+  $("hud").innerHTML = r ? `<span>${"❤️".repeat(r.lives)}${"🖤".repeat(LIVES - r.lives)}</span>` : "";
+}
+function showStart() {
+  r = null; renderHud();
+  const stars = k => best[k] ? "⭐".repeat(best[k]) + "☆".repeat(3 - best[k]) : "☆☆☆";
+  $("screen").innerHTML = `<h2 style="margin-top:0">Choose a river to cross</h2>
+    <p class="muted">Each plank needs the right number. Pick the stepping stone that makes the equation true and the bridge grows. Three wrong stones and the bridge collapses!</p>
+    <div class="rivers">${Object.entries(RIVERS).map(([k,v]) => `<button class="btn" data-r="${k}">${v.name} <span style="float:right">${stars(k)}</span><small>${v.note}</small></button>`).join("")}</div>`;
+  document.querySelectorAll("[data-r]").forEach(b => b.onclick = () => start(b.dataset.r));
+}
+function start(river) {
+  r = { river, built:0, lives:LIVES, planks:[], over:false, last:"" };
+  nextEquation(); render();
+}
+
+function sceneHtml() {
+  const heroCol = r.over === "win" ? 9 : r.built;
+  const top = Array.from({length:10}, (_, c) => `<div>${c === heroCol ? (r.over === "lose" ? "😱" : r.over === "win" ? "🎉" : "🧑‍🚀") : ""}</div>`).join("");
+  const bottom = ["<div>🏕️</div>"]
+    .concat(Array.from({length:PLANKS}, (_, i) => i < r.built ? `<div class="plank">${r.planks[i]}</div>` : `<div class="water">${r.over === "lose" ? "💦" : "🌊"}</div>`))
+    .concat(["<div>🏁</div>"]).join("");
+  return `<div class="scene"><div class="grid">${top}</div><div class="grid">${bottom}</div></div>`;
+}
+function render() {
+  renderHud();
+  const shown = r.filled != null ? r.filled : "?";
+  const text = r.eq.text.replace("?", `<span class="q">${shown}</span>`);
+  $("screen").innerHTML = `${sceneHtml()}
+    <div class="eq">${text}</div>
+    <div class="stones">${r.stones.map(n => `<button class="stone" data-n="${n}" ${r.dead.has(n) || r.over || r.filled != null ? "disabled" : ""}>${n}</button>`).join("")}</div>
+    <div class="msg" id="msg">${r.msg || "Pick the stepping stone that fits!"}</div>`;
+  document.querySelectorAll(".stone").forEach(b => b.onclick = () => choose(+b.dataset.n));
+}
+
+function choose(n) {
+  if (r.over) return;
+  if (n === r.eq.ans) {
+    r.filled = n; r.planks.push(n); r.built++; r.msg = "✅ Plank placed!";
+    if (r.built === PLANKS) return win();
+    render();
+    setTimeout(() => { if (!r || r.over) return; r.msg = ""; nextEquation(); render(); }, 650);
+  } else {
+    r.dead.add(n); r.lives--; r.msg = "💦 Splash! That stone sinks.";
+    if (r.lives <= 0) return lose();
+    render();
+  }
+}
+function win() {
+  r.over = "win";
+  const stars = r.lives;
+  if (!best[r.river] || stars > best[r.river]) { best[r.river] = stars; saveBest(); }
+  render();
+  $("screen").insertAdjacentHTML("beforeend", `<div class="center"><h2>🌉 You crossed the ${RIVERS[r.river].name.toLowerCase()}!</h2><p>${"⭐".repeat(stars)}${"☆".repeat(3 - stars)} ${stars === 3 ? "Perfect bridge, no splashes!" : ""}</p>
+    <div class="row"><button class="btn" id="again">Build again</button><button class="btn alt" id="menu">Pick another river</button></div></div>`);
+  $("again").onclick = () => start(r.river); $("menu").onclick = showStart;
+}
+function lose() {
+  r.over = "lose"; render();
+  $("screen").insertAdjacentHTML("beforeend", `<div class="center"><h2>The bridge collapsed! 💥</h2><p class="muted">You built ${r.built} of ${PLANKS} planks. Engineers learn from every splash!</p>
+    <div class="row"><button class="btn" id="again">Try again</button><button class="btn alt" id="menu">Pick another river</button></div></div>`);
+  $("again").onclick = () => start(r.river); $("menu").onclick = showStart;
+}
+
+showStart();
+</script>
+</body>
+</html>
