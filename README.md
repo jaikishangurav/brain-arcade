@@ -11,6 +11,7 @@ A collection of small educational browser games for kids. Each game is a single 
 | Number Bridge Builder | Missing-number equations, including two-step puzzles |
 | Hangman Heroes | Vocabulary and spelling (monster-chase style, no gallows) |
 | Pattern Detective | Spotting rules in shape and number sequences |
+| Story Mixer | Creative writing, vocabulary "power words", and reading aloud |
 
 ## Play
 

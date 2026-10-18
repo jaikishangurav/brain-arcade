@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Mixer</title>
+<link rel="stylesheet" href="../../shared.css">
+<style>
+  .group { margin:14px 0; }
+  .group h3 { margin:0 0 8px; font-size:17px; }
+  .opts { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+  .opt { background:var(--panel2); color:var(--ink); border:2px solid transparent; border-radius:12px; padding:8px 10px; font-size:15px; cursor:pointer; text-align:left; font-family:inherit; }
+  .opt:hover { border-color:#5b6bd6; }
+  .opt.sel { border-color:var(--accent); background:#2b3680; }
+  .opt .e { font-size:24px; margin-right:6px; vertical-align:middle; }
+  .title { width:100%; font-size:clamp(22px, 5vw, 30px); font-weight:bold; background:transparent; color:var(--accent); border:0; border-bottom:2px dashed #3a47a0; padding:4px 0; font-family:inherit; text-align:center; }
+  .title:focus { outline:none; border-bottom-color:var(--accent); }
+  .picks { text-align:center; font-size:30px; margin:6px 0; letter-spacing:6px; }
+  .story { margin:12px 0; }
+  .para { font-size:18px; line-height:1.65; margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#0d1330; }
+  .para.you { background:#14304a; border-left:5px solid var(--good); }
+  mark.pw { background:#3a2f7a; color:#ffe9a8; border-radius:5px; padding:0 4px; cursor:help; border-bottom:2px dotted var(--accent); }
+  .words { font-size:15px; }
+  .words li { margin:4px 0; }
+  .tools { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .tools .btn { font-size:15px; padding:8px 12px; }
+  textarea { width:100%; min-height:84px; border-radius:12px; border:3px solid #3a47a0; background:var(--bg); color:var(--ink); font-size:17px; padding:10px; font-family:inherit; resize:vertical; }
+  textarea:focus { outline:none; border-color:var(--accent); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+  .chip { background:var(--panel2); color:var(--ink); border:0; border-radius:99px; padding:5px 12px; font-size:14px; cursor:pointer; font-family:inherit; }
+  .chip:hover { background:#3a4890; }
+  .tip { color:var(--muted); font-size:14px; margin:6px 0; }
+  .badge { color:var(--accent); font-weight:bold; }
+  .lib { display:grid; gap:10px; }
+  .item { display:flex; gap:10px; align-items:center; background:var(--panel2); border-radius:12px; padding:10px 12px; }
+  .item .t { flex:1; }
+  .item .t small { display:block; color:var(--muted); }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#1f6b3a; padding:8px 16px; border-radius:99px; font-size:15px; display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="../../">← Arcade</a>
+    <h1>📖 Story Mixer</h1>
+    <div class="hud" id="hud"></div>
+  </header>
+  <div class="card" id="screen"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const HEROES = [
+  { e:"🧑‍🚀", name:"Zara", desc:"a fearless young astronaut" },
+  { e:"⛏️", name:"Pixel", desc:"a block-mining explorer with a square hat" },
+  { e:"🧱", name:"Brick", desc:"a tiny plastic builder with a very big imagination" },
+  { e:"🤖", name:"Bolt", desc:"a friendly robot who loved collecting facts" },
+  { e:"🐉", name:"Ember", desc:"a baby dragon who sneezed sparks" },
+  { e:"🧪", name:"Professor Fizz", desc:"a scientist with wild, bubbly hair" },
+  { e:"🐱", name:"Luna", desc:"a space cat in a glass helmet" },
+  { e:"🏴‍☠️", name:"Captain Pip", desc:"a very polite pirate" },
+];
+const PLACES = [
+  { e:"🪐", name:"Purple Planet", at:"on a faraway planet with a purple sky", flavor:"Two moons hung overhead, winking like sleepy eyes." },
+  { e:"🏰", name:"Block Castle", at:"inside a huge castle built from colourful blocks", flavor:"Every tower wobbled a little, as if it were laughing." },
+  { e:"🌊", name:"Deep Ocean", at:"at the bottom of the sparkling ocean", flavor:"Glowing jellyfish drifted past like floating lanterns." },
+  { e:"🧪", name:"Secret Lab", at:"in a secret laboratory under a mountain", flavor:"Test tubes bubbled and fizzed in every colour of the rainbow." },
+  { e:"📚", name:"Magic Library", at:"inside a magical library with no ceiling", flavor:"Paper birds fluttered between the shelves, flapping their pages." },
+  { e:"☁️", name:"Floating Island", at:"on a floating island high above the clouds", flavor:"Tiny rainbows hopped from cloud to cloud." },
+  { e:"🚀", name:"Starship", at:"aboard a starship zooming past Saturn", flavor:"The rings of Saturn flashed by the window like a spinning record." },
+  { e:"🌋", name:"Volcano Island", at:"on an island with a sleepy, grumbling volcano", flavor:"The volcano burped out puffs of warm, glittery smoke." },
+];
+const PROBLEMS = [
+  { e:"🌟", name:"Missing stars", title:"The Missing Stars", start:"all the stars in the sky blinked out, one by one", cause:"a sleepy comet had gobbled them up like popcorn", solve:"tickled the comet until it giggled, and every star popped back into the sky" },
+  { e:"💥", name:"Confetti monster", title:"The Confetti Monster", start:"a giant green monster stomped in, hissing like a kettle", cause:"the monster was only hissing because it was scared of the dark", solve:"gave the monster a night-light, and it burst into happy confetti" },
+  { e:"🗺️", name:"Upside-down maps", title:"The Upside-Down Map", start:"every map in the world flipped upside down", cause:"a mischievous breeze had turned all the maps over while everyone slept", solve:"turned the biggest map the right way up, and everyone finally knew where to go" },
+  { e:"📖", name:"Vanishing books", title:"The Vanishing Books", start:"every book on the shelves vanished without a trace", cause:"a bookworm as big as a bus was nibbling on the stories", solve:"read the bookworm a bedtime story, and it burped every book back out" },
+  { e:"🔧", name:"Grumpy rocket", title:"The Grumpy Rocket", start:"the rocket refused to start, no matter which buttons were pushed", cause:"the rocket was grumpy because nobody had said good morning to it", solve:"said a cheerful good morning, and the rocket purred to life" },
+  { e:"🟢", name:"Hungry slime", title:"The Hungry Slime", start:"a gooey green slime began gobbling up everything in sight", cause:"the slime was hungry because it had lost its favourite snack, a golden brick", solve:"found the golden brick under a cushion, and the slime shrank to the size of a marble" },
+  { e:"⛈️", name:"Broken bridge", title:"The Broken Bridge", start:"a thunderstorm snapped the only bridge in half", cause:"the storm cloud was sulking because it had lost its umbrella", solve:"built a rainbow bridge from bricks, and the cloud cheered up at last" },
+  { e:"🥚", name:"Glowing egg", title:"The Glowing Egg", start:"a glowing egg began to wobble and crack", cause:"inside was a baby star that had never seen the sky", solve:"carried the baby star up high, and it twinkled a big thank you" },
+];
+const HELPERS = [
+  { e:"🔦", name:"a magic flashlight", power:"Its beam was so bright that every shadow ran away giggling." },
+  { e:"🛠️", name:"a super toolbox", power:"It could build anything, from a staircase to a flying sofa." },
+  { e:"🐸", name:"a talking space frog", power:"The frog croaked clever advice from under a tiny helmet." },
+  { e:"🎒", name:"a rocket-powered backpack", power:"It went WHOOSH and zoomed over every obstacle." },
+  { e:"📘", name:"a book that answers questions", power:"Its pages whispered the answer to anything, as long as the question was polite." },
+  { e:"🧫", name:"a pet slime named Gloop", power:"Gloop could stretch like a rubber band and squeeze through the smallest gap." },
+  { e:"🥾", name:"a pair of gravity boots", power:"They let the wearer stroll up walls and across ceilings." },
+  { e:"🧩", name:"a magic brick", power:"It could turn into any tool, any vehicle, or even a sandwich." },
+];
+// power words: adjectives describe things, feelings describe how the hero feels
+const ADJ = [["enormous","very, very big"],["mysterious","strange and hard to explain"],["peculiar","odd or unusual"],["luminous","glowing, giving off light"],["gigantic","extremely large"],["ingenious","very clever and inventive"]];
+const FEEL = [["determined","not giving up, no matter what"],["bewildered","very confused"],["curious","eager to find out and learn"],["astonished","extremely surprised"],["fearless","not afraid of anything"]];
+const SILLY = [
+  ["a parade of dancing penguins","waddled past in tiny party hats"],
+  ["three grumpy llamas","blocked the path until someone told a joke"],
+  ["a gang of tap-dancing robots","clanked by, singing wildly off-key"],
+  ["a cloud of giggling fireflies","buzzed around and tickled everyone's ears"],
+  ["a talking potato","rolled in and asked for directions to the Moon"],
+  ["a team of polite zombies","knocked politely and asked if anyone had seen their slippers"],
+];
+const SOUNDS = ["BOOM!","CRASH!","WHOOSH!","SPLAT!","KABLOOEY!","ZAP!"];
+const TIMES = ["sunny","drizzly","strangely quiet","extra bouncy","sparkly"];
+const CELEBRATE = [
+  "That night, everyone held a feast with pancakes, pizza, and a cake shaped like a rocket.",
+  "The crowd cheered so loudly that the echo travelled across three galaxies.",
+  "They celebrated with a dance party that lasted until the moons went to bed.",
+  "A parade of tiny trumpeting mice marched through to say thank you.",
+];
+const MORALS = [
+  "Even the smallest hero can fix the biggest problem",
+  "Asking questions is the first step to solving anything",
+  "Teamwork turns scary things into silly things",
+  "Reading and learning are real superpowers",
+  "Being kind is the best kind of magic",
+];
+const P1 = [
+  "One {time} morning, {hero}, {desc}, woke up {at}. {flavor} It seemed like an ordinary day, until {start}. {hero} gasped. “{s1}” echoed in the distance. {hero} felt {feel}.",
+  "{hero} was {desc}, and today was supposed to be a quiet day {at}. {flavor} But then {start}! {hero} felt {feel}. “Well,” said {hero}, “this is a problem. {s1}”",
+];
+const P2 = [
+  "To fix it, {hero} grabbed {helper}. {power} Soon {hero} met {sn}, who {sv}. {s2} It was the most {adj} thing {hero} had seen all day. Following the clues, {hero} finally discovered the truth: {cause}.",
+  "{hero} reached for {helper}. {power} Just then, {sn} {sv}. “Don’t worry!” shouted {hero}, “I have a plan!” The clues led to something {adj}, and at last {hero} learned why: {cause}.",
+];
+const P3 = [
+  "So {hero} {solve}. {celebrate} “{moral},” said {hero} with a grin. The end!",
+  "And that is how {hero} {solve}. {celebrate} {hero} smiled, because now {hero} knew one thing for sure: {moral}. The end!",
+];
+const STARTERS = ["Suddenly,", "But then,", "Meanwhile,", "To everyone’s surprise,", "The next day,", "“Oh no!” said"];
+const TIPS = [
+  "Tip: add a describing word, like a “squishy” slime or a “tiny” rocket.",
+  "Tip: say how a character feels. Was the hero nervous, proud, or hungry?",
+  "Tip: use a sound word, like CRASH! or SPLAT!",
+  "Tip: write what a character says out loud, in quotation marks.",
+  "Tip: surprise the reader! What is the last thing anyone expects?",
+];
+
+const $ = id => document.getElementById(id);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const esc = s => s.replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const fill = (t, c) => t.replace(/\{(\w+)\}/g, (m, k) => c[k] ?? m);
+
+let library = [];
+try { const s = JSON.parse(localStorage.getItem("sm-library")); if (Array.isArray(s)) library = s; } catch(e) {}
+const persist = () => { try { localStorage.setItem("sm-library", JSON.stringify(library)); return true; } catch(e) { return false; } };
+
+let picks = { hero:null, place:null, problem:null, helper:null };
+let story = null;       // { id, title, picks, words:[[w,def],[w,def]], paras:[{text, by}] }
+let tipIdx = 0;
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = "none", 1800);
+}
+
+// ---------- building a story ----------
+function build(p) {
+  const hero = HEROES[p.hero], place = PLACES[p.place], prob = PROBLEMS[p.problem], help = HELPERS[p.helper];
+  const adj = pick(ADJ), feel = pick(FEEL), [sn, sv] = pick(SILLY);
+  const sounds = [...SOUNDS].sort(() => Math.random() - 0.5);
+  const c = { hero:hero.name, desc:hero.desc, at:place.at, flavor:place.flavor, start:prob.start, cause:prob.cause, solve:prob.solve,
+    helper:help.name, power:help.power, adj:adj[0], feel:feel[0], sn, sv, s1:sounds[0], s2:sounds[1], time:pick(TIMES),
+    celebrate:pick(CELEBRATE), moral:pick(MORALS) };
+  return {
+    id:null, title:`${hero.name} and ${prob.title}`, picks:{ ...p }, words:[adj, feel],
+    paras:[P1, P2, P3].map(set => ({ text:fill(pick(set), c), by:"game" })),
+  };
+}
+
+// ---------- screens ----------
+function renderHud() { $("hud").innerHTML = `<button class="chip" id="libBtn">📚 My stories (${library.length})</button>`; $("libBtn").onclick = showLibrary; }
+
+function group(title, key, items) {
+  return `<div class="group"><h3>${title}</h3><div class="opts">${items.map((it, i) =>
+    `<button class="opt${picks[key] === i ? " sel" : ""}" data-k="${key}" data-i="${i}"><span class="e">${it.e}</span>${it.name}</button>`).join("")}</div></div>`;
+}
+function showPicker() {
+  story = null; renderHud();
+  const ready = Object.values(picks).every(v => v !== null);
+  $("screen").innerHTML = `<h2 style="margin-top:0">Mix your story!</h2>
+    <p class="muted">Pick one from each group (or roll the dice) and the story machine will write a silly adventure. Then you get to add what happens next!</p>
+    ${group("1. Who is the hero?", "hero", HEROES)}${group("2. Where does it happen?", "place", PLACES)}
+    ${group("3. What goes wrong?", "problem", PROBLEMS)}${group("4. Which gadget helps?", "helper", HELPERS)}
+    <div class="row"><button class="btn alt" id="dice">🎲 Surprise me</button><button class="btn" id="mix" ${ready ? "" : "disabled"}>✨ Mix my story!</button></div>`;
+  document.querySelectorAll(".opt").forEach(b => b.onclick = () => { picks[b.dataset.k] = +b.dataset.i; showPicker(); });
+  $("dice").onclick = () => { picks = { hero:rand(HEROES), place:rand(PLACES), problem:rand(PROBLEMS), helper:rand(HELPERS) }; showPicker(); };
+  $("mix").onclick = () => { story = build(picks); showStory(); };
+}
+const rand = a => Math.floor(Math.random() * a.length);
+
+function paraHtml(p, words) {
+  if (p.by === "you") return `<div class="para you">✍️ </div>`;
+  let h = esc(p.text);
+  words.forEach(([w, d]) => { h = h.replace(new RegExp(`\\b(${w})\\b`, "gi"), `<mark class="pw" title="${esc(d)}">$1</mark>`); });
+  return `<div class="para">${h}</div>`;
+}
+function emojiLine() {
+  const p = story.picks;
+  return [HEROES[p.hero], PLACES[p.place], PROBLEMS[p.problem], HELPERS[p.helper]].map(x => x.e).join(" ");
+}
+function showStory() {
+  renderHud();
+  const mine = story.paras.filter(p => p.by === "you").length;
+  const badge = mine >= 3 ? `<span class="badge">🏅 Story Author! You wrote ${mine} parts.</span>` : mine >= 1 ? `<span class="badge">✍️ Co-author: ${mine} part${mine > 1 ? "s" : ""} written${mine < 3 ? ". Add " + (3 - mine) + " more for a badge!" : ""}</span>` : "";
+  $("screen").innerHTML = `<input class="title" id="title" maxlength="60" aria-label="Story title">
+    <div class="picks">${emojiLine()}</div>
+    <div class="story" id="story"></div>
+    <div class="card" style="background:#0d1330"><b>⭐ Power words</b>
+      <ul class="words">${story.words.map(([w, d]) => `<li><mark class="pw">${w}</mark>: ${d}</li>`).join("")}</ul></div>
+    <h3>What happens next?</h3>
+    <div class="chips">${STARTERS.map(s => `<button class="chip" data-s="${esc(s)}">${s}</button>`).join("")}</div>
+    <textarea id="mine" maxlength="400" placeholder="Write the next part of the story…"></textarea>
+    <div class="tip">${TIPS[tipIdx % TIPS.length]} ${badge}</div>
+    <div class="row" style="justify-content:flex-start"><button class="btn" id="add">➕ Add to story</button></div>
+    <div class="tools">
+      <button class="btn alt" id="read">🔊 Read aloud</button><button class="btn alt" id="copy">📋 Copy</button><button class="btn alt" id="save">💾 Save</button>
+      <button class="btn alt" id="remix">🔀 Remix</button><button class="btn alt" id="new">⬅️ New story</button>
+    </div>`;
+  $("title").value = story.title;
+  $("title").oninput = e => { story.title = e.target.value; };
+  const box = $("story");
+  story.paras.forEach(p => {
+    box.insertAdjacentHTML("beforeend", paraHtml(p, story.words));
+    if (p.by === "you") box.lastElementChild.append(document.createTextNode(p.text));
+  });
+  document.querySelectorAll(".chip[data-s]").forEach(b => b.onclick = () => { const t = $("mine"); t.value = (t.value ? t.value + " " : "") + b.dataset.s + " "; t.focus(); });
+  $("add").onclick = addMine;
+  $("read").onclick = readAloud;
+  $("copy").onclick = copyStory;
+  $("save").onclick = saveStory;
+  $("remix").onclick = () => { if (story.paras.some(p => p.by === "you") && !confirm("Remixing will throw away the parts you wrote. Continue?")) return; const id = story.id; story = build(story.picks); story.id = id; stopReading(); showStory(); };
+  $("new").onclick = () => { stopReading(); showPicker(); };
+}
+function addMine() {
+  const v = $("mine").value.trim();
+  if (!v) { toast("Write a sentence first!"); return; }
+  story.paras.push({ text:v, by:"you" }); tipIdx++;
+  showStory();
+  toast("Added! Keep going…");
+}
+
+// ---------- extras ----------
+const plainText = () => story.title + "\n\n" + story.paras.map(p => p.text).join("\n\n");
+function stopReading() { try { speechSynthesis.cancel(); } catch(e) {} }
+function readAloud() {
+  if (!("speechSynthesis" in window)) { toast("Read-aloud isn't supported in this browser."); return; }
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; }
+  const u = new SpeechSynthesisUtterance(plainText()); u.rate = 0.95; speechSynthesis.speak(u);
+}
+async function copyStory() {
+  try { await navigator.clipboard.writeText(plainText()); toast("Story copied! 📋"); } catch(e) { toast("Couldn't copy. Select the text instead."); }
+}
+function saveStory() {
+  const copy = JSON.parse(JSON.stringify(story));
+  if (!copy.title.trim()) copy.title = "My story";
+  if (copy.id) { const i = library.findIndex(s => s.id === copy.id); if (i >= 0) library[i] = copy; else library.unshift(copy); }
+  else { copy.id = Date.now(); story.id = copy.id; library.unshift(copy); }
+  library = library.slice(0, 12);
+  toast(persist() ? "Saved to My stories 💾" : "Couldn't save in this browser.");
+  renderHud();
+}
+function showLibrary() {
+  stopReading();
+  $("screen").innerHTML = `<h2 style="margin-top:0">📚 My stories</h2>${library.length ? `<div class="lib">${library.map(s => `<div class="item"><div class="t"><b>${esc(s.title)}</b><small>${s.paras.length} parts · ${s.paras.filter(p => p.by === "you").length} written by you</small></div><button class="btn alt" data-o="${s.id}">Open</button><button class="chip" data-d="${s.id}">🗑️</button></div>`).join("")}</div>` : `<p class="muted">Nothing saved yet. Mix a story and press 💾 Save.</p>`}
+    <div class="row" style="margin-top:14px"><button class="btn" id="back">✨ Mix a new story</button></div>`;
+  document.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { story = JSON.parse(JSON.stringify(library.find(s => String(s.id) === b.dataset.o))); showStory(); });
+  document.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { if (!confirm("Delete this story?")) return; library = library.filter(s => String(s.id) !== b.dataset.d); persist(); showLibrary(); renderHud(); });
+  $("back").onclick = showPicker;
+}
+
+renderHud(); showPicker();
+</script>
+</body>
+</html>
