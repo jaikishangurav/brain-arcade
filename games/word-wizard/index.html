@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Wizard</title>
+<link rel="stylesheet" href="../../shared.css">
+<style>
+  .stage { text-align:center; padding:8px 0 4px; }
+  .goblin { font-size:clamp(64px, 16vw, 100px); position:relative; display:inline-block; }
+  .fx { position:absolute; left:50%; top:50%; font-size:56px; transform:translate(-50%,-50%); pointer-events:none; animation:fx .8s ease-out forwards; }
+  @keyframes fx { from { opacity:1; transform:translate(-150%,-50%) scale(.6); } to { opacity:0; transform:translate(-50%,-80%) scale(1.5); } }
+  .bar { height:12px; border-radius:6px; background:#2a3260; overflow:hidden; width:min(70vw, 280px); margin:4px auto 0; }
+  .bar > i { display:block; height:100%; background:#b06bff; transition:width .4s; }
+  .clue { font-size:18px; margin:10px 0 2px; text-align:center; }
+  .cat { color:var(--accent); font-size:14px; text-align:center; }
+  .slots, .tiles { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:12px 0; min-height:52px; }
+  .slot { width:46px; height:52px; border-radius:10px; border:3px dashed #3a47a0; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:bold; }
+  .slot.on { border-style:solid; border-color:var(--accent); background:var(--panel2); cursor:pointer; }
+  .slot.lock { border-color:var(--good); cursor:default; }
+  .tile { width:50px; height:56px; border-radius:10px; border:0; background:#4a3a9a; color:#fff; font-size:28px; font-weight:bold; cursor:pointer; font-family:inherit; box-shadow:0 4px 0 #2b2166; }
+  .tile:active { transform:translateY(3px); box-shadow:0 1px 0 #2b2166; }
+  .tile.used { visibility:hidden; }
+  .timer { height:8px; border-radius:4px; background:#2a3260; overflow:hidden; margin:8px 0; }
+  .timer > i { display:block; height:100%; background:var(--accent); width:100%; }
+  .msg { min-height:26px; text-align:center; font-size:17px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="../../">← Arcade</a>
+    <h1>🧙 Word Wizard</h1>
+    <div class="hud" id="hud"></div>
+  </header>
+  <div class="card" id="screen"></div>
+</div>
+
+<script>
+"use strict";
+// [word, category, clue]
+const WORDS = [
+  ["ATOM","Science","The tiny building block of everything"],["COMET","Space","An icy ball with a glowing tail"],["ORBIT","Space","The path a planet takes around the Sun"],
+  ["TIGER","Animals","A big striped cat"],["EAGLE","Animals","A bird of prey with sharp eyes"],["PANDA","Animals","A black and white bear that eats bamboo"],
+  ["PLANT","Science","It grows from a seed and makes oxygen"],["ANVIL","Fantasy","A smith hammers hot metal on it"],["TORCH","Adventure","Lights up a dark cave"],
+  ["STORY","Books","Characters and a plot, told in words"],["BRICK","Building","A block you build walls with"],["BUILD","Building","To make something piece by piece"],
+  ["ROBOT","Technology","A machine that follows programs"],["TOWER","Building","A tall, narrow structure"],
+  ["MAGNET","Science","It pulls iron toward it"],["ROCKET","Space","It blasts astronauts into orbit"],["PLANET","Space","A world that circles a star"],
+  ["GALAXY","Space","Billions of stars held together by gravity"],["METEOR","Space","A shooting star"],["SATURN","Space","The planet with famous rings"],
+  ["ENERGY","Science","The power to make things move or glow"],["OXYGEN","Science","The gas we breathe in"],["FOSSIL","Science","An ancient animal's remains in rock"],
+  ["ZOMBIE","Fantasy","A spooky undead monster"],["CASTLE","Fantasy","A knight's stone fortress"],["KNIGHT","Fantasy","A brave warrior in armour"],
+  ["WIZARD","Fantasy","Casts spells with a wand"],["POTION","Fantasy","A magical drink in a bottle"],["DRAGON","Fantasy","A fire-breathing flying beast"],
+  ["AUTHOR","Books","The person who writes a book"],["ENGINE","Technology","The part that makes a car go"],["BRIDGE","Building","It lets you cross a river"],["TURTLE","Animals","A reptile that carries its shell"],
+  ["GRAVITY","Science","The force that pulls things down"],["VOLCANO","Science","A mountain that erupts lava"],["CRYSTAL","Science","A sparkly mineral with flat faces"],
+  ["BATTERY","Technology","It stores electricity"],["CREEPER","Fantasy","A green hissing explosive monster"],["DIAMOND","Adventure","The hardest, shiniest gem"],
+  ["PICKAXE","Adventure","A miner's digging tool"],["LIBRARY","Books","A building full of books to borrow"],["CHAPTER","Books","A section of a book"],
+  ["MYSTERY","Books","A story where you solve a puzzle"],["DOLPHIN","Animals","A clever ocean mammal that clicks and whistles"],
+  ["GIRAFFE","Animals","The tallest animal on land"],["PENGUIN","Animals","A bird that swims but cannot fly"],["OCTOPUS","Animals","It has eight arms"],
+  ["CHEETAH","Animals","The fastest land animal"],["ECLIPSE","Space","When the Moon hides the Sun"],
+  ["SKELETON","Fantasy","A walking pile of bones"],["VILLAGER","Adventure","Someone who lives in a small town"],["TREASURE","Adventure","What pirates bury and hunt for"],
+  ["ELEPHANT","Animals","The biggest land animal, with a trunk"],["KANGAROO","Animals","It carries its baby in a pouch"],["ASTEROID","Space","A rocky chunk orbiting the Sun"],
+  ["MOLECULE","Science","Two or more atoms joined together"],["ADVENTURE","Books","An exciting journey full of surprises"],
+  ["ASTRONAUT","Space","A person who travels to space"],["TELESCOPE","Space","It makes faraway stars look closer"],["LIGHTNING","Science","A giant spark in a storm"],
+];
+const ROUNDS = 10, TIME = 35;
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+let best = 0;
+try { best = parseInt(localStorage.getItem("ww-best"), 10) || 0; } catch(e) {}
+
+let g = null, tick = null;
+
+function pickWord(round, used) {
+  const band = round < 3 ? w => w[0].length <= 5 : round < 6 ? w => w[0].length === 6 : w => w[0].length >= 7;
+  const pool = WORDS.filter(w => band(w) && !used.has(w[0]));
+  return shuffle(pool.length ? pool : WORDS.filter(w => !used.has(w[0])))[0];
+}
+function scramble(word) {
+  let s; do { s = shuffle(word.split("")); } while (s.join("") === word);
+  return s.map(ch => ({ ch, used:false }));
+}
+
+function renderHud() {
+  $("hud").innerHTML = g ? `<span>📜 ${Math.min(g.round + 1, ROUNDS)}/${ROUNDS}</span><span>⭐ ${g.score}</span><span>🔥 ${g.streak}</span>` : `<span class="muted">Best: ⭐ ${best}</span>`;
+}
+function showStart() {
+  g = null; renderHud(); clearInterval(tick);
+  $("screen").innerHTML = `<div class="center"><div style="font-size:72px">🧙✨</div><h2 style="margin-top:0">Unscramble the spell words!</h2>
+    <p class="muted">Letters are jumbled. Tap them (or type) to spell the secret word and zap the goblin. Longer words are worth more. Use 💡 if you get stuck, but it costs points!</p>
+    <button class="btn" id="go">Start casting ✨</button><p class="muted">Best score: ⭐ ${best}</p></div>`;
+  $("go").onclick = start;
+}
+function start() {
+  g = { round:0, score:0, streak:0, used:new Set(), solved:0 };
+  nextWord();
+}
+function nextWord() {
+  if (g.round >= ROUNDS) return finish();
+  const [word, cat, clue] = pickWord(g.round, g.used);
+  g.used.add(word);
+  Object.assign(g, { word, cat, clue, tiles:scramble(word), ans:[], locked:0, hints:0, wrong:0, left:TIME, over:false, msg:"" });
+  render();
+  clearInterval(tick);
+  tick = setInterval(() => {
+    if (g.over) return;
+    g.left -= 0.25;
+    $("tm").style.width = Math.max(0, g.left / TIME * 100) + "%";
+    if (g.left <= 0) timeUp();
+  }, 250);
+}
+
+function render() {
+  renderHud();
+  const slots = g.word.split("").map((_, i) => {
+    const t = g.ans[i] != null ? g.tiles[g.ans[i]].ch : "";
+    return `<div class="slot${t ? " on" : ""}${i < g.locked ? " lock" : ""}" data-i="${i}">${t}</div>`;
+  }).join("");
+  const tiles = g.tiles.map((t, i) => `<button class="tile${t.used ? " used" : ""}" data-t="${i}">${t.ch}</button>`).join("");
+  $("screen").innerHTML = `
+    <div class="stage"><div class="goblin" id="gob">👺</div>
+      <div class="bar"><i style="width:${(1 - g.solved / ROUNDS) * 100}%"></i></div></div>
+    <div class="cat">${g.cat} · ${g.word.length} letters</div>
+    <div class="clue">${g.clue}</div>
+    <div class="timer"><i id="tm" style="width:${g.left / TIME * 100}%"></i></div>
+    <div class="slots" id="slots">${slots}</div>
+    <div class="tiles" id="tiles">${tiles}</div>
+    <div class="msg" id="msg">${g.msg}</div>
+    <div class="row"><button class="btn alt" id="shuf">🔀 Shuffle</button><button class="btn alt" id="clr">⌫ Clear</button><button class="btn alt" id="hint">💡 Hint (−5)</button></div>`;
+  document.querySelectorAll(".tile").forEach(b => b.onclick = () => addTile(+b.dataset.t));
+  document.querySelectorAll(".slot.on:not(.lock)").forEach(s => s.onclick = () => removeFrom(+s.dataset.i));
+  $("shuf").onclick = () => { const free = g.tiles.map((t,i) => i).filter(i => !g.tiles[i].used); const chars = shuffle(free.map(i => g.tiles[i].ch)); free.forEach((i,k) => g.tiles[i].ch = chars[k]); render(); };
+  $("clr").onclick = () => removeFrom(g.locked);
+  $("hint").onclick = hint;
+}
+
+function addTile(i) {
+  if (g.over || g.tiles[i].used || g.ans.length >= g.word.length) return;
+  g.tiles[i].used = true; g.ans.push(i);
+  render();
+  if (g.ans.length === g.word.length) check();
+}
+function removeFrom(idx) {
+  if (g.over) return;
+  while (g.ans.length > Math.max(idx, g.locked)) g.tiles[g.ans.pop()].used = false;
+  g.msg = ""; render();
+}
+function hint() {
+  if (g.over || g.locked >= g.word.length - 1) return;
+  removeFrom(g.locked);
+  const need = g.word[g.locked];
+  const ti = g.tiles.findIndex(t => !t.used && t.ch === need);
+  if (ti < 0) return;
+  g.tiles[ti].used = true; g.ans.push(ti); g.locked++; g.hints++;
+  render();
+}
+function check() {
+  const guess = g.ans.map(i => g.tiles[i].ch).join("");
+  if (guess === g.word) return solved();
+  g.wrong++; g.streak = 0;
+  while (g.ans.length > g.locked) g.tiles[g.ans.pop()].used = false;
+  g.msg = "Not quite, try again!";
+  render(); $("slots").classList.add("shake");
+}
+function solved() {
+  g.over = true; clearInterval(tick);
+  const pts = Math.max(5, g.word.length * 10 + Math.round(g.left) - g.hints * 5 - g.wrong * 3);
+  g.streak++;
+  const bonus = g.streak >= 3 ? Math.round(pts * 0.5) : 0;
+  g.score += pts + bonus; g.solved++;
+  renderHud();
+  $("gob").insertAdjacentHTML("beforeend", `<span class="fx">${["✨","🔥","⚡","❄️"][Math.floor(Math.random()*4)]}</span>`);
+  $("msg").innerHTML = `<span class="good">✨ ${g.word}! +${pts}${bonus ? ` (+${bonus} streak bonus)` : ""}</span>`;
+  $("tiles").style.opacity = .4;
+  setTimeout(() => { g.round++; nextWord(); }, 1300);
+}
+function timeUp() {
+  g.over = true; clearInterval(tick); g.streak = 0; renderHud();
+  $("msg").innerHTML = `<span class="bad">⏰ Time's up! The word was <b>${g.word}</b></span>`;
+  setTimeout(() => { g.round++; nextWord(); }, 1800);
+}
+function finish() {
+  clearInterval(tick);
+  const rank = g.score >= 700 ? "Archmage 🧙‍♂️👑" : g.score >= 450 ? "Sorcerer ⚡" : g.score >= 250 ? "Mage ✨" : "Apprentice 📖";
+  const isBest = g.score > best;
+  if (isBest) { best = g.score; try { localStorage.setItem("ww-best", String(best)); } catch(e) {} }
+  renderHud();
+  $("screen").innerHTML = `<div class="center"><div style="font-size:72px">${g.solved === ROUNDS ? "🏆" : "🎓"}</div><h2 style="margin-top:0">${rank}</h2>
+    <p>You spelled <b>${g.solved}/${ROUNDS}</b> words and scored <b>⭐ ${g.score}</b>.${isBest ? " <br>🎉 New best score!" : ""}</p>
+    <button class="btn" id="again">Cast again</button></div>`;
+  $("again").onclick = start;
+}
+
+addEventListener("keydown", e => {
+  if (!g || g.over || !g.word) return;
+  if (e.key === "Backspace") { e.preventDefault(); if (g.ans.length > g.locked) { g.tiles[g.ans.pop()].used = false; g.msg = ""; render(); } return; }
+  if (/^[a-z]$/i.test(e.key) && !e.metaKey && !e.ctrlKey) {
+    const ti = g.tiles.findIndex(t => !t.used && t.ch === e.key.toUpperCase());
+    if (ti >= 0) addTile(ti);
+  }
+});
+
+showStart();
+</script>
+</body>
+</html>

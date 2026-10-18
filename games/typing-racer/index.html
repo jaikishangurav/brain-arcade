@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Typing Racer</title>
+<link rel="stylesheet" href="../../shared.css">
+<style>
+  .track { background:#1b1f2e; border-radius:12px; padding:8px 10px; }
+  .lane { position:relative; height:34px; margin:6px 0; border-bottom:2px dashed #3b4260; }
+  .lane .name { position:absolute; left:0; top:-2px; font-size:11px; color:var(--muted); }
+  .finish { position:absolute; right:0; top:0; bottom:0; width:14px; background:repeating-conic-gradient(#fff 0 25%, #111 0 50%) 0 0/7px 7px; border-radius:2px; }
+  .car { position:absolute; top:8px; width:46px; height:20px; border-radius:8px 12px 6px 6px; transition:left .12s linear; }
+  .car::before { content:""; position:absolute; left:26px; top:3px; width:12px; height:8px; background:#cfe9ff; border-radius:3px; }
+  .car::after { content:""; position:absolute; left:6px; bottom:-5px; width:10px; height:10px; background:#111; border-radius:50%; box-shadow:24px 0 0 #111; }
+  .car.me { outline:2px solid var(--accent); outline-offset:2px; }
+  .word { font-size:clamp(34px, 9vw, 56px); text-align:center; font-weight:bold; letter-spacing:3px; margin:14px 0 4px; font-family:"Courier New", monospace; }
+  .word .ok { color:var(--good); }
+  .word .cur { border-bottom:4px solid var(--accent); }
+  .word.err { color:var(--bad); }
+  .next { text-align:center; color:var(--muted); font-family:"Courier New", monospace; font-size:20px; }
+  .stats { display:flex; gap:16px; justify-content:center; margin-top:10px; font-size:16px; }
+  #inp { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+  .levels { display:grid; gap:10px; margin-top:12px; }
+  .levels .btn { text-align:left; }
+  .levels small { display:block; font-weight:normal; opacity:.8; }
+  .big { font-size:72px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="back" href="../../">← Arcade</a>
+    <h1>🏎️ Typing Racer</h1>
+    <div class="hud" id="hud"></div>
+  </header>
+  <div class="card" id="screen"></div>
+</div>
+<input id="inp" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Type here">
+
+<script>
+"use strict";
+const EASY = ["sun","star","moon","rocket","brick","game","book","read","lava","cave","gold","tree","jump","fast","robot","bridge","magic","word","map","fish","space","sword","torch","build","coal","dig","wolf","lego","moon","comet"];
+const MEDIUM = ["planet","galaxy","diamond","creeper","library","science","gravity","builder","explore","castle","dragon","story","volcano","journey","puzzle","battery","pickaxe","machine","chapter","kingdom","meteor","crystal","engine","forest"];
+const HARD = ["telescope","adventure","astronaut","experiment","landscape","lightning","mysterious","architect","constellation","microscope","imagination","laboratory","encyclopedia","spaceship","gravitational","exploration"];
+const LEVELS = {
+  easy:   { name:"Easy",   note:"Short words, friendly rivals",     words:() => EASY,                  rivals:[0.8, 1.0, 1.2] },
+  medium: { name:"Medium", note:"Longer words, quicker rivals",     words:() => EASY.concat(MEDIUM),   rivals:[1.2, 1.5, 1.8] },
+  hard:   { name:"Hard",   note:"Big words, speedy rivals",         words:() => MEDIUM.concat(HARD),   rivals:[1.7, 2.0, 2.4] },
+};
+const RACE_CHARS = 160;
+const COLORS = ["#ffd54a", "#e5484d", "#4aa3ff", "#5be37d"];
+const NAMES = ["You", "Zoom", "Turbo", "Blaze"];
+const $ = id => document.getElementById(id);
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+let best = {};
+try { const s = JSON.parse(localStorage.getItem("tr-best")); if (s && typeof s === "object") best = s; } catch(e) {}
+const saveBest = () => { try { localStorage.setItem("tr-best", JSON.stringify(best)); } catch(e) {} };
+
+let r = null, raf = 0;
+
+function showStart() {
+  r = null; cancelAnimationFrame(raf);
+  $("hud").innerHTML = "";
+  $("screen").innerHTML = `<h2 style="margin-top:0">Pick your race</h2>
+    <p class="muted">Type each word exactly as it appears to speed your car along the track. Wrong keys don't move you, so accuracy wins races. Beat the rivals to the finish line!</p>
+    <div class="levels">${Object.entries(LEVELS).map(([k,l]) => `<button class="btn" data-l="${k}">${l.name}<small>${l.note}${best[k] ? ` · best ${best[k]} WPM` : ""}</small></button>`).join("")}</div>`;
+  document.querySelectorAll("[data-l]").forEach(b => b.onclick = () => startRace(b.dataset.l));
+}
+
+function buildWords(level) {
+  const pool = LEVELS[level].words(); const out = []; let n = 0;
+  let bag = [];
+  while (n < RACE_CHARS) { if (!bag.length) bag = shuffle(pool); const w = bag.pop(); out.push(w); n += w.length; }
+  return out;
+}
+
+function startRace(level) {
+  const cfg = LEVELS[level];
+  r = { level, words:buildWords(level), wi:0, ci:0, typed:0, errors:0, progress:0, started:0, finishedAt:0,
+        rivals:cfg.rivals.map((cps,i) => ({ cps, pos:0, phase:Math.random()*6, done:0 })), phase:"count", count:3, err:false };
+  $("screen").innerHTML = `
+    <div class="track" id="track">${["me",0,1,2].map((k,i) => `<div class="lane"><span class="name">${NAMES[i]}</span><div class="finish"></div><div class="car ${k==="me"?"me":""}" id="car${i}" style="background:${COLORS[i]};left:0"></div></div>`).join("")}</div>
+    <div id="body"></div>`;
+  $("hud").innerHTML = `<span id="pos"></span>`;
+  $("screen").onclick = () => $("inp").focus();
+  $("inp").value = ""; $("inp").focus();
+  renderBody();
+  const cd = setInterval(() => {
+    r.count--;
+    if (r.count <= 0) { clearInterval(cd); r.phase = "go"; r.started = performance.now(); r.last = r.started; loop(); }
+    renderBody();
+  }, 800);
+}
+
+function renderBody() {
+  if (r.phase === "count") { $("body").innerHTML = `<div class="word" style="color:var(--accent)">${r.count > 0 ? r.count : "GO!"}</div><div class="next">Get ready… click here and start typing when the race begins</div>`; return; }
+  const w = r.words[r.wi];
+  const letters = w.split("").map((c,i) => `<span class="${i < r.ci ? "ok" : i === r.ci ? "cur" : ""}">${c}</span>`).join("");
+  const nxt = r.words.slice(r.wi + 1, r.wi + 4).join("  ");
+  const acc = r.typed ? Math.round(100 * (r.typed - r.errors) / r.typed) : 100;
+  const mins = (performance.now() - r.started) / 60000;
+  const wpm = mins > 0.02 ? Math.round((r.progress / 5) / mins) : 0;
+  $("body").innerHTML = `<div class="word${r.err ? " err" : ""}">${letters}</div><div class="next">${nxt}</div>
+    <div class="stats"><span>⌨️ ${wpm} WPM</span><span>🎯 ${acc}%</span><span>🏁 ${Math.round(r.progress / RACE_CHARS * 100)}%</span></div>`;
+}
+
+function typeChar(ch) {
+  if (!r || r.phase !== "go") return;
+  const w = r.words[r.wi];
+  r.typed++;
+  if (ch.toLowerCase() === w[r.ci]) {
+    r.ci++; r.progress++; r.err = false;
+    if (r.ci >= w.length) { r.wi++; r.ci = 0; }
+    if (r.progress >= RACE_CHARS) return finish();
+  } else { r.errors++; r.err = true; }
+  renderBody();
+}
+$("inp").addEventListener("input", e => {
+  const v = e.target.value; e.target.value = "";
+  for (const ch of v) if (/\S/.test(ch)) typeChar(ch);
+});
+addEventListener("keydown", e => { if (r && r.phase === "go" && e.key === " ") e.preventDefault(); });
+
+function loop() {
+  if (!r || r.phase !== "go") return;
+  const now = performance.now(), dt = Math.min(0.1, (now - r.last) / 1000); r.last = now;
+  const t = (now - r.started) / 1000;
+  r.rivals.forEach(v => {
+    if (v.done) return;
+    v.pos += v.cps * dt * (1 + 0.18 * Math.sin(t * 0.8 + v.phase));
+    if (v.pos >= RACE_CHARS) { v.pos = RACE_CHARS; v.done = t; }
+  });
+  setCar(0, r.progress);
+  r.rivals.forEach((v, i) => setCar(i + 1, v.pos));
+  const ahead = r.rivals.filter(v => v.pos > r.progress).length;
+  $("pos").textContent = `Place: ${ahead + 1}${["st","nd","rd","th"][ahead]} of 4`;
+  raf = requestAnimationFrame(loop);
+}
+function setCar(i, p) {
+  const lane = $("car" + i).parentElement;
+  $("car" + i).style.left = (p / RACE_CHARS) * (lane.clientWidth - 62) + "px";
+}
+
+function finish() {
+  r.phase = "end"; cancelAnimationFrame(raf);
+  setCar(0, RACE_CHARS);
+  const secs = (performance.now() - r.started) / 1000;
+  const place = r.rivals.filter(v => v.pos >= RACE_CHARS || v.done).length + 1;
+  const wpm = Math.round((RACE_CHARS / 5) / (secs / 60));
+  const acc = Math.round(100 * (r.typed - r.errors) / r.typed);
+  const newBest = !best[r.level] || wpm > best[r.level];
+  if (newBest) { best[r.level] = wpm; saveBest(); }
+  const medal = ["🥇","🥈","🥉","🏁"][place - 1];
+  const title = ["You win!","Second place!","Third place!","Keep practising!"][place - 1];
+  $("body").innerHTML = `<div class="center"><div class="big">${medal}</div><h2 style="margin:0">${title}</h2>
+    <p>${wpm} words per minute · ${acc}% accuracy · ${secs.toFixed(1)}s${newBest ? "<br>🎉 New personal best!" : ""}</p>
+    <div class="row"><button class="btn" id="again">Race again</button><button class="btn alt" id="menu">Change level</button></div></div>`;
+  $("again").onclick = () => startRace(r.level);
+  $("menu").onclick = showStart;
+}
+
+showStart();
+</script>
+</body>
+</html>
