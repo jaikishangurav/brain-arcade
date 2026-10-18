@@ -1,0 +1,102 @@
+{
+  "general": [
+      {"q":"What is at the centre of our solar system?","a":["The Sun","The Moon","Jupiter","A black hole"],"e":"The Sun is a star, and everything else orbits around it."},
+      {"q":"How many planets are in our solar system?","a":["8","7","9","10"],"e":"There are eight planets, from Mercury to Neptune."},
+      {"q":"What force keeps the planets orbiting the Sun?","a":["Gravity","Magnetism","Wind","Friction"],"e":"The Sun's gravity pulls the planets so they curve around it instead of flying off."},
+      {"q":"Where is the asteroid belt?","a":["Between Mars and Jupiter","Between Earth and Mars","Beyond Neptune","Between Mercury and Venus"],"e":"Millions of rocky asteroids orbit between Mars and Jupiter."},
+      {"q":"What is the name of our galaxy?","a":["The Milky Way","Andromeda","The Big Dipper","Orion"],"e":"Our solar system is in the Milky Way galaxy."},
+      {"q":"Why can't you hear sounds in space?","a":["There is no air to carry sound","It is too cold","Space is too bright","Sound travels too fast"],"e":"Sound needs air (or another material) to travel through, and space is nearly empty."},
+      {"q":"Who was the first person to walk on the Moon?","a":["Neil Armstrong","Buzz Lightyear","Yuri Gagarin","Elon Musk"],"e":"Neil Armstrong stepped onto the Moon in 1969."},
+      {"q":"About how long does sunlight take to reach Earth?","a":["About 8 minutes","About 8 seconds","About 8 hours","About 8 days"],"e":"Light travels fast, but the Sun is far away: roughly 8 minutes."},
+      {"q":"What is a shooting star really?","a":["A tiny space rock burning up in our atmosphere","A star falling down","A comet's tail","A far-away rocket"],"e":"It is a meteor: a small bit of rock or dust glowing as it burns up high above Earth."},
+      {"q":"What was the name of the first artificial satellite, launched in 1957?","a":["Sputnik 1","Apollo 11","Voyager","Hubble"],"e":"The Soviet Union launched Sputnik 1 and started the space age."},
+      {"q":"What do we call a pattern of stars, like Orion or the Big Dipper?","a":["A constellation","A galaxy","A nebula","A comet"],"e":"People have drawn pictures in the stars, called constellations, for thousands of years."},
+      {"q":"What is a black hole?","a":["A place where gravity is so strong not even light escapes","A hole in the Moon","A planet with no light","A dark cloud of dust"],"e":"A black hole's gravity is so strong that nothing, not even light, can get out."},
+      {"q":"What does the Moon's gravity cause on Earth's oceans?","a":["Tides","Hurricanes","Earthquakes","Waves of light"],"e":"The Moon's pull makes the ocean rise and fall twice a day: the tides."},
+      {"q":"What is the International Space Station?","a":["A science lab where astronauts live, orbiting Earth","A giant telescope on the Moon","A rocket launch pad","A base on Mars"],"e":"The ISS circles Earth about every 90 minutes with astronauts on board."},
+      {"q":"A comet is mostly made of…","a":["Ice, dust and rock","Pure gold","Hot gas only","Metal"],"e":"Comets are dirty snowballs. Their glowing tails form when the Sun heats the ice."},
+      {"q":"What is the name of the NASA rover that landed on Mars in 2021 with the Ingenuity helicopter?","a":["Perseverance","Curiosity","Sojourner","Opportunity"],"e":"Perseverance landed in 2021, and Ingenuity became the first helicopter to fly on another planet."},
+      {"q":"What is the Sun mostly made of?","a":["Hydrogen and helium","Fire","Rock and metal","Liquid lava"],"e":"The Sun is a ball of hot hydrogen and helium gas. Hydrogen fuses into helium to make its light."},
+      {"q":"What causes day and night on Earth?","a":["Earth spinning on its axis","The Sun moving around Earth","The Moon blocking the Sun","Earth moving closer and farther from the Sun"],"e":"Earth turns once about every 24 hours, so each side faces the Sun, then faces away."},
+      {"q":"What do we call the path a planet takes around the Sun?","a":["An orbit","A trail","A runway","A circle line"],"e":"Every planet follows a curved path called an orbit."},
+      {"q":"How many moons does Earth have?","a":["One","Two","None","Seven"],"e":"Earth has one natural moon, which we simply call the Moon."},
+      {"q":"What is a light-year?","a":["The distance light travels in one year","A year on a bright planet","The time it takes the Sun to rise","A very fast spaceship"],"e":"Light zooms about 9.5 trillion kilometres in a year. A light-year measures distance, not time."},
+      {"q":"Which space telescope, launched in 1990, has been taking pictures of the universe for decades?","a":["Hubble","Sputnik","Voyager","Kepler's Eye"],"e":"The Hubble Space Telescope orbits Earth and has sent back thousands of amazing images."},
+      {"q":"The James Webb Space Telescope is mainly built to see which kind of light?","a":["Infrared light","Sound waves","Radio from Earth","Only the colour red"],"e":"Infrared lets Webb peer through dust clouds and see the faint light from the first galaxies."},
+      {"q":"Why do astronauts seem to float inside the space station?","a":["They are falling around Earth together with the station","There is no gravity at all up there","The air pushes them up","Magnets hold them"],"e":"Gravity is still strong there. Astronauts and the station are in constant free fall around Earth, so they feel weightless."},
+      {"q":"What is the layer of gases around a planet called?","a":["The atmosphere","The crust","The orbit","The core"],"e":"The atmosphere is the blanket of gases around a planet. Earth's has the oxygen we breathe."},
+      {"q":"What is a satellite?","a":["An object that orbits a bigger object in space","A kind of star","A rocket's fuel tank","A planet's shadow"],"e":"The Moon is a natural satellite of Earth. Spacecraft that circle Earth are artificial satellites."},
+      {"q":"What do we call a piece of space rock that survives the fall and lands on the ground?","a":["A meteorite","A comet","A planet","A meteor shower"],"e":"In space it is a meteoroid, in the sky it is a meteor, and on the ground it is a meteorite."},
+      {"q":"About how old is our solar system?","a":["About 4.6 billion years","About 4.6 million years","About 46,000 years","About 460 billion years"],"e":"The Sun and planets formed together around 4.6 billion years ago."},
+      {"q":"In which direction does the Sun rise?","a":["East","West","North","South"],"e":"Earth spins toward the east, so the Sun appears to come up in the east."}
+  ],
+  "destinations": {
+    "Mercury": [
+      {"q":"Which planet is closest to the Sun?","a":["Mercury","Venus","Mars","Earth"],"e":"Mercury orbits closest to the Sun."},
+      {"q":"A year on Mercury (one trip around the Sun) lasts about…","a":["88 Earth days","365 Earth days","12 Earth years","1 Earth day"],"e":"Mercury is so close to the Sun that it zooms around in just 88 Earth days."},
+      {"q":"How big is Mercury compared with the other planets?","a":["It is the smallest planet","It is the biggest planet","It is the same size as Earth","It is bigger than Jupiter"],"e":"Mercury is the smallest planet, only a little bigger than our Moon."}
+    ],
+    "Venus": [
+      {"q":"Which planet is the hottest, thanks to thick clouds that trap heat?","a":["Venus","Mercury","Mars","Neptune"],"e":"Venus's thick atmosphere traps heat, making it hotter even than Mercury."},
+      {"q":"Venus spins in a direction that is…","a":["Backwards compared with most planets","The same as Earth","Not at all","Side to side like a coin"],"e":"Venus rotates backwards (retrograde), so the Sun rises in the west there."},
+      {"q":"Venus shines so brightly at dawn and dusk that people call it…","a":["The Morning Star or Evening Star","The Red Planet","The Ringed Planet","The Blue Marble"],"e":"Venus is not really a star. It is a planet reflecting lots of sunlight."}
+    ],
+    "Earth": [
+      {"q":"About how much of Earth's surface is covered by water?","a":["About 71%","About 10%","About 30%","About 99%"],"e":"Around 71% of Earth is water, which is why it looks blue from space."},
+      {"q":"Which gas do plants make that we need to breathe?","a":["Oxygen","Helium","Methane","Neon"],"e":"Plants make oxygen during photosynthesis."},
+      {"q":"About how long does Earth take to go once around the Sun?","a":["About 365 days","About 30 days","About 24 hours","About 10 years"],"e":"One trip around the Sun is a year, and that is why a year has about 365 days."}
+    ],
+    "Mars": [
+      {"q":"Why is Mars called the Red Planet?","a":["Rusty iron dust covers it","It is very hot","It is covered in red oceans","It glows red"],"e":"Iron in the soil has rusted, giving Mars its red colour."},
+      {"q":"What is the name of the giant volcano on Mars, the tallest in the solar system?","a":["Olympus Mons","Mount Everest","Mauna Loa","Vesuvius"],"e":"Olympus Mons is about 2.5 times taller than Mount Everest."},
+      {"q":"What are the names of Mars's two moons?","a":["Phobos and Deimos","Titan and Europa","Io and Ganymede","Luna and Sol"],"e":"Phobos and Deimos are small, lumpy moons."},
+      {"q":"Which robot rovers have explored Mars?","a":["Curiosity and Perseverance","Voyager and Hubble","Apollo and Gemini","Sputnik and Luna"],"e":"Curiosity and Perseverance are car-sized rovers that drive around Mars studying rocks."}
+    ],
+    "Jupiter": [
+      {"q":"Which is the largest planet in our solar system?","a":["Jupiter","Saturn","Earth","Neptune"],"e":"Jupiter is bigger than all the other planets put together."},
+      {"q":"The Great Red Spot on Jupiter is a giant…","a":["Storm","Volcano","Crater","Ocean"],"e":"It is a huge storm, wider than Earth."},
+      {"q":"Jupiter is mostly made of which gases?","a":["Hydrogen and helium","Oxygen and nitrogen","Carbon dioxide","Methane only"],"e":"Jupiter is a gas giant with no solid surface to stand on."}
+    ],
+    "Saturn": [
+      {"q":"Saturn's rings are mostly made of…","a":["Ice and rock","Gas","Lava","Metal"],"e":"The rings are billions of chunks of ice, from dust-sized to house-sized."},
+      {"q":"Which planet is so light for its size that it could float in water?","a":["Saturn","Mercury","Earth","Mars"],"e":"Saturn is mostly hydrogen and helium, so it is less dense than water."},
+      {"q":"Which spacecraft orbited Saturn for 13 years, ending in 2017?","a":["Cassini","New Horizons","Perseverance","Apollo 11"],"e":"Cassini studied Saturn, its rings and its moons before diving into the planet in 2017."}
+    ],
+    "Uranus": [
+      {"q":"What is unusual about the way Uranus spins?","a":["It is tilted on its side","It does not spin","It spins faster than any planet","It spins backwards every day"],"e":"Uranus is tipped over so far that it rolls around the Sun on its side."},
+      {"q":"Which gas gives Uranus its blue-green colour?","a":["Methane","Oxygen","Nitrogen","Neon"],"e":"Methane absorbs red light, leaving the blue-green glow."},
+      {"q":"Who discovered Uranus in 1781?","a":["William Herschel","Galileo","Neil Armstrong","Isaac Newton"],"e":"Herschel spotted it through his telescope, and it was the first planet found with one."}
+    ],
+    "Neptune": [
+      {"q":"Which planet is farthest from the Sun?","a":["Neptune","Uranus","Saturn","Jupiter"],"e":"Neptune is the eighth and farthest planet."},
+      {"q":"Which planet has the fastest winds in the solar system?","a":["Neptune","Earth","Venus","Mars"],"e":"Neptune's winds can reach over 1,000 miles per hour."},
+      {"q":"About how long does Neptune take to orbit the Sun once?","a":["About 165 Earth years","About 12 Earth years","About 1 Earth year","About 5 Earth days"],"e":"Neptune is so far away that it has only gone around the Sun once since its discovery in 1846."}
+    ],
+    "Moon": [
+      {"q":"About how long does the Moon take to orbit Earth?","a":["About a month","About a day","About a week","About a year"],"e":"The Moon circles Earth roughly every 27 to 29 days. That is where the word \"month\" comes from."},
+      {"q":"The large dark plains you can see on the Moon are called…","a":["Maria, which means seas","Oceans","Forests","Cloud shadows"],"e":"Early astronomers thought they were seas. They are really ancient plains of cooled lava."},
+      {"q":"How strong is the Moon's gravity compared with Earth's?","a":["About 1/6","The same","Twice as strong","There is none"],"e":"On the Moon you would weigh only about one sixth of what you weigh on Earth."},
+      {"q":"Which mission first landed humans on the Moon?","a":["Apollo 11","Sputnik 1","Voyager 2","Hubble"],"e":"Apollo 11 landed Neil Armstrong and Buzz Aldrin on the Moon in 1969."}
+    ],
+    "Ceres": [
+      {"q":"Ceres is a dwarf planet found in…","a":["The asteroid belt","The rings of Saturn","The far edge of the solar system","The Moon's orbit"],"e":"Ceres lives in the asteroid belt between Mars and Jupiter."},
+      {"q":"What did the Dawn spacecraft find shining on Ceres?","a":["Bright salty spots","Gold mines","Alien lights","Frozen lakes of lava"],"e":"The bright spots in Occator crater are deposits of salts left behind when salty water froze and dried."}
+    ],
+    "Europa": [
+      {"q":"Europa is a moon of which planet?","a":["Jupiter","Saturn","Mars","Neptune"],"e":"Europa is one of Jupiter's four biggest moons."},
+      {"q":"What may be hiding under Europa's icy shell?","a":["A huge salty ocean","A sea of lava","A forest","Nothing at all"],"e":"Scientists think Europa holds more liquid water than all of Earth's oceans combined."},
+      {"q":"Which NASA spacecraft is on its way to study Europa?","a":["Europa Clipper","Dawn","Cassini","Curiosity"],"e":"Europa Clipper will fly past the icy moon many times to find out whether it could support life."}
+    ],
+    "Titan": [
+      {"q":"Titan is the biggest moon of which planet?","a":["Saturn","Jupiter","Uranus","Mars"],"e":"Titan orbits Saturn and is bigger than the planet Mercury."},
+      {"q":"What fills the lakes on Titan?","a":["Liquid methane and ethane","Water","Lava","Orange juice"],"e":"It is so cold on Titan that gases like methane turn into liquid and form lakes."},
+      {"q":"What did the Huygens probe do in 2005?","a":["Landed on Titan","Flew past Pluto","Orbited Mars","Landed on a comet"],"e":"Huygens parachuted through Titan's orange haze and landed on its surface."}
+    ],
+    "Pluto": [
+      {"q":"What kind of world is Pluto?","a":["A dwarf planet","A star","A comet","A giant planet"],"e":"In 2006 astronomers decided Pluto is a dwarf planet because it is small and shares its orbit with other icy objects."},
+      {"q":"Which NASA spacecraft flew past Pluto in 2015?","a":["New Horizons","Voyager 1","Apollo 11","Perseverance"],"e":"New Horizons travelled for nine years to reach Pluto and sent back amazing photos."},
+      {"q":"About how long is one year on Pluto?","a":["About 248 Earth years","About 1 Earth year","About 12 Earth years","About 30 Earth days"],"e":"Pluto is so far from the Sun that one lap takes 248 Earth years."},
+      {"q":"What shape is the big bright glacier on Pluto?","a":["A heart","A star","A square","A spiral"],"e":"The heart-shaped region is called Tombaugh Regio and is covered in nitrogen ice."}
+    ]
+  }
+}

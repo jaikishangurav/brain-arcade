@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planet Hopper</title>
+<style>
+  :root { --bg:#070b1f; --panel:#141b3c; --ink:#eef1ff; --muted:#9aa5d6; --good:#5be37d; --bad:#ff8a8a; --accent:#ffd54a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Trebuchet MS", system-ui, sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:10px 12px 24px; }
+  header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { margin:0; font-size:22px; }
+  .hud { margin-left:auto; display:flex; gap:14px; align-items:center; font-size:16px; }
+  .fuel span { display:inline-block; width:22px; height:14px; margin-left:3px; border-radius:3px; background:#2a3260; vertical-align:middle; }
+  .fuel span.on { background:var(--good); }
+  .row { display:flex; gap:8px; overflow-x:auto; padding:6px 0 10px; }
+  .rowlabel { margin-top:2px; }
+  .sub { color:var(--muted); font-size:11px; }
+  .pbtn { flex:0 0 auto; background:var(--panel); color:var(--ink); border:2px solid transparent; border-radius:12px; padding:6px 10px; cursor:pointer; text-align:center; min-width:82px; font-size:13px; }
+  .pbtn:disabled { cursor:default; opacity:.55; }
+  .pbtn.here { border-color:var(--accent); opacity:1; }
+  .pbtn:not(:disabled):hover { border-color:#5b6bd6; }
+  .orb { width:30px; height:30px; border-radius:50%; margin:0 auto 4px; position:relative; box-shadow: inset -6px -6px 10px rgba(0,0,0,.45); }
+  .orb.ring::after { content:""; position:absolute; left:-9px; right:-9px; top:11px; height:8px; border:2px solid #d9c38a; border-radius:50%; transform:rotate(-15deg); }
+  .stamp { color:var(--good); }
+  #stage { position:relative; }
+  canvas { width:100%; display:block; border-radius:14px; background:#000; touch-action:none; }
+  #overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; padding:12px; background:rgba(5,8,25,.82); border-radius:14px; }
+  .box { background:var(--panel); border:2px solid #3a47a0; border-radius:16px; padding:16px 18px; width:100%; max-width:560px; max-height:100%; overflow:auto; }
+  .box h2 { margin:0 0 8px; font-size:19px; }
+  .opt { display:block; width:100%; text-align:left; background:#202a5c; color:var(--ink); border:2px solid transparent; border-radius:10px; padding:10px 12px; margin:7px 0; font-size:16px; cursor:pointer; }
+  .opt:hover:not(:disabled) { border-color:var(--accent); }
+  .opt.right { background:#1f6b3a; }
+  .opt.wrong { background:#7a2a2a; }
+  .go { background:var(--accent); color:#222; border:0; border-radius:10px; padding:10px 18px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:8px; }
+  .muted { color:var(--muted); font-size:14px; }
+  .log { background:var(--panel); border-radius:14px; padding:10px 14px; margin-top:12px; }
+  .log h2 { margin:0 0 6px; font-size:17px; }
+  .log li { list-style:none; padding:3px 0; font-size:14px; color:var(--muted); }
+  .log li.found { color:var(--ink); }
+  .log ul { margin:0; padding:0; }
+  .mini { background:var(--panel); color:var(--ink); border:2px solid #3a47a0; border-radius:10px; padding:5px 10px; font-size:14px; cursor:pointer; font-family:inherit; }
+  .mini:hover { border-color:var(--accent); }
+  .fld { width:100%; margin:4px 0; padding:8px 10px; border-radius:8px; border:2px solid #3a47a0; background:#0b1030; color:var(--ink); font-size:15px; font-family:inherit; }
+  .fld:focus { outline:none; border-color:var(--accent); }
+  .qlist { list-style:none; margin:8px 0 0; padding:0; font-size:14px; }
+  .qlist li { display:flex; gap:8px; align-items:center; padding:4px 0; border-top:1px solid #2a3260; }
+  .qlist li span { flex:1; }
+  .hint { color:var(--muted); font-size:13px; margin:6px 2px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🚀 Planet Hopper</h1>
+    <div class="hud">
+      <button class="mini" id="myq" title="Write your own questions">✏️ My questions</button>
+      <div>⭐ <b id="score">0</b></div>
+      <div class="fuel">Fuel <span id="f0"></span><span id="f1"></span><span id="f2"></span></div>
+    </div>
+  </header>
+  <div id="map" class="row"></div>
+  <div class="muted rowlabel">🌙 Bonus worlds: moons &amp; dwarf planets</div>
+  <div id="bonus" class="row"></div>
+  <div id="stage">
+    <canvas id="cv" width="800" height="450"></canvas>
+    <div id="overlay"><div class="box" id="box"></div></div>
+  </div>
+  <p class="hint">Fly with the arrow keys / WASD, or drag on the screen. Dodge asteroids, grab ⭐ for bonus points. Each asteroid hit costs fuel!</p>
+  <div class="log"><h2>📖 Captain's logbook <span class="muted" id="tour"></span></h2><ul id="log"></ul></div>
+</div>
+
+<script>
+"use strict";
+const W = 800, H = 450;
+
+// Game data lives in data/planets.json and data/questions.json (see README for how to add more).
+// Question format: { q: question, a: [correct answer, ...wrong answers], e: explanation shown after answering }
+let PLANETS = [], GENERAL = [], MAIN_COUNT = 8;      // everything from the first "bonus" planet on is a bonus world
+let BASE = { general:[], destinations:{} };
+const posOf = i => PLANETS[i].pos ?? i;
+
+// ---------- state ----------
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+let here = 2;                 // start on Earth
+let mode = "idle";            // idle | quiz | flight
+let fuel = 0, score = 0;
+let flight = null, rocket = { x:160, y:H/2, tx:160, ty:H/2 };
+let saved = { visited:[2], best:0 };
+try { const s = JSON.parse(localStorage.getItem("ph-save")); if (s && Array.isArray(s.visited)) saved = s; } catch(e) {}
+const persist = () => { try { localStorage.setItem("ph-save", JSON.stringify(saved)); } catch(e) {} };
+let asked = new Set();
+const keys = {};
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+// ---------- DOM ----------
+function renderHud() {
+  $("score").textContent = score;
+  for (let i=0;i<3;i++) $("f"+i).className = i < fuel ? "on" : "";
+}
+function renderMap() {
+  $("map").innerHTML = ""; $("bonus").innerHTML = "";
+  PLANETS.forEach((p,i) => {
+    const b = document.createElement("button");
+    b.className = "pbtn" + (i===here ? " here" : "");
+    b.disabled = mode !== "idle" || i === here;
+    const visited = saved.visited.includes(i);
+    b.innerHTML = `<div class="orb${p.ring?" ring":""}" style="background:radial-gradient(circle at 35% 30%, ${p.color}, ${p.color} 55%, #222)"></div>${p.id}${i===here?" 📍":""}${visited?' <span class="stamp">✔</span>':""}${p.sub?`<div class="sub">${p.sub}</div>`:""}`;
+    b.onclick = () => beginTrip(i);
+    $(i < MAIN_COUNT ? "map" : "bonus").appendChild(b);
+  });
+}
+const countVisited = (from, to) => saved.visited.filter(i => i >= from && i < to).length;
+function renderLog() {
+  $("log").innerHTML = "";
+  PLANETS.forEach((p,i) => {
+    const li = document.createElement("li");
+    const v = saved.visited.includes(i);
+    li.className = v ? "found" : "";
+    li.textContent = v ? `${i < MAIN_COUNT ? "🪐" : "🌙"} ${p.id}: ${p.fact}` : `❓ ${p.id}: visit to discover`;
+    $("log").appendChild(li);
+  });
+  $("tour").textContent = `(${countVisited(0, MAIN_COUNT)}/${MAIN_COUNT} planets · ${countVisited(MAIN_COUNT, PLANETS.length)}/${PLANETS.length - MAIN_COUNT} bonus worlds · best score ${saved.best})`;
+}
+function showBox(html) { $("box").innerHTML = html; $("overlay").style.display = "flex"; }
+function hideBox() { $("overlay").style.display = "none"; }
+
+// ---------- quiz ----------
+function pickQuestions(destIdx, n) {
+  const fresh = list => list.filter(q => !asked.has(q.q));
+  let pool = shuffle(fresh(PLANETS[destIdx].qs)).slice(0, 2);
+  pool = pool.concat(shuffle(fresh(GENERAL)));
+  if (pool.length < n) { asked.clear(); pool = shuffle(PLANETS[destIdx].qs.concat(GENERAL)); }
+  return pool.slice(0, n);
+}
+function askOne(q, title, done) {
+  asked.add(q.q);
+  const opts = shuffle(q.a.map((t,i) => ({t, ok:i===0})));
+  showBox(`<h2>${title}</h2><p style="font-size:17px;margin:4px 0 8px">${esc(q.q)}</p><div id="opts"></div><div id="fb"></div>`);
+  const holder = $("opts");
+  opts.forEach(o => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.textContent = o.t;
+    b.onclick = () => {
+      holder.querySelectorAll(".opt").forEach((x,i) => { x.disabled = true; if (opts[i].ok) x.classList.add("right"); });
+      if (!o.ok) b.classList.add("wrong");
+      $("fb").innerHTML = `<p class="muted">${o.ok ? "✅ Correct! " : "❌ Not quite. "}${esc(q.e || "")}</p><button class="go" id="nx">Next ▶</button>`;
+      $("nx").onclick = () => done(o.ok);
+    };
+    holder.appendChild(b);
+  });
+}
+function askSeries(qs, title, perCorrect, finish) {
+  let i = 0, right = 0;
+  const step = () => {
+    if (i >= qs.length) return finish(right);
+    askOne(qs[i], `${title} (${i+1}/${qs.length})`, ok => { if (ok) { right++; perCorrect(); } i++; step(); });
+  };
+  step();
+}
+
+// ---------- trip flow ----------
+function beginTrip(dest) {
+  mode = "quiz"; renderMap();
+  fuel = 0; renderHud();
+  const p = PLANETS[dest];
+  showBox(`<h2>⛽ Refuel for ${p.id}</h2><p>Answer 3 questions. Each correct answer fills a tank of fuel. Asteroids burn fuel when they hit you, so fill up!</p><button class="go" id="st">Start refuelling</button>`);
+  $("st").onclick = () => askSeries(pickQuestions(dest, 3), "Refuel", () => { fuel = Math.min(3, fuel+1); score += 50; renderHud(); }, () => {
+    let msg = "";
+    if (fuel === 0) { fuel = 1; msg = "<p class='muted'>Mission control sends you a tiny emergency tank. Good luck!</p>"; renderHud(); }
+    showBox(`<h2>🚀 Ready for launch!</h2><p>Fuel: ${"🟩".repeat(fuel)}</p>${msg}<button class="go" id="lf">Blast off to ${p.id}!</button>`);
+    $("lf").onclick = () => startFlight(dest);
+  });
+}
+function startFlight(dest) {
+  hideBox();
+  const steps = Math.max(1, Math.round(Math.abs(posOf(dest) - posOf(here))));
+  flight = { dest, steps, t:0, dur:Math.min(34, 12 + 4*steps), objs:[], spawn:0.5, starT:1, hitCd:0, paused:false };
+  rocket.x = rocket.tx = 130; rocket.y = rocket.ty = H/2;
+  mode = "flight";
+}
+function rescue() {
+  flight.paused = true;
+  const qs = shuffle(GENERAL.concat(PLANETS.flatMap(p => p.qs)).filter(q => !asked.has(q.q)));
+  const q = (qs.length ? qs : shuffle(GENERAL))[0];
+  askOne(q, "⚠️ Out of fuel! Answer to restart the engine", ok => {
+    if (ok) { fuel = 1; score += 50; renderHud(); flight.hitCd = 1.5; flight.objs = flight.objs.filter(o => o.x > rocket.x + 250); hideBox(); flight.paused = false; }
+    else rescue();
+  });
+}
+function land() {
+  const dest = flight.dest; const p = PLANETS[dest];
+  mode = "idle"; here = dest; flight = null;
+  const firstTime = !saved.visited.includes(dest);
+  const mainBefore = countVisited(0, MAIN_COUNT), bonusBefore = countVisited(MAIN_COUNT, PLANETS.length);
+  if (firstTime) saved.visited.push(dest);
+  score += 100;
+  if (score > saved.best) saved.best = score;
+  persist(); renderHud(); renderMap(); renderLog();
+  const grand = mainBefore < MAIN_COUNT && countVisited(0, MAIN_COUNT) === MAIN_COUNT;
+  const deep = bonusBefore < PLANETS.length - MAIN_COUNT && countVisited(MAIN_COUNT, PLANETS.length) === PLANETS.length - MAIN_COUNT;
+  const won = grand || deep;
+  showBox(`<h2>🎉 Landed on ${p.id}!</h2><p>${p.fact}</p><p class="muted">+100 points ${firstTime ? "· added to your logbook!" : ""}</p>
+    ${grand ? `<h2>🏆 Grand Tour complete!</h2><p>You visited all 8 planets. Now try the bonus worlds!</p>` : ""}
+    ${deep ? `<h2>🌟 Deep Space Tour complete!</h2><p>You visited every moon and dwarf planet. Final score ${score}.</p>` : ""}
+    <button class="go" id="ok">${won ? "Keep exploring" : "Pick the next destination"}</button>`);
+  $("ok").onclick = hideBox;
+}
+
+// ---------- input ----------
+addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true; if (mode==="flight" && e.key.startsWith("Arrow")) e.preventDefault(); });
+addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+function pointerTo(e) {
+  if (mode !== "flight") return;
+  const r = cv.getBoundingClientRect();
+  rocket.tx = Math.max(30, Math.min(W*0.6, (e.clientX - r.left) / r.width * W));
+  rocket.ty = Math.max(30, Math.min(H-30, (e.clientY - r.top) / r.height * H));
+}
+cv.addEventListener("pointermove", pointerTo);
+cv.addEventListener("pointerdown", pointerTo);
+
+// ---------- update ----------
+const bgStars = Array.from({length:90}, () => ({ x:Math.random()*W, y:Math.random()*H, z:Math.random()*2+0.3 }));
+function update(dt) {
+  const speedBoost = mode === "flight" ? 1 : 0.15;
+  bgStars.forEach(s => { s.x -= s.z * 120 * speedBoost * dt; if (s.x < 0) { s.x += W; s.y = Math.random()*H; } });
+  if (mode !== "flight" || flight.paused) return;
+
+  // movement
+  const sp = 340;
+  if (keys["arrowleft"]||keys["a"]) rocket.tx -= sp*dt;
+  if (keys["arrowright"]||keys["d"]) rocket.tx += sp*dt;
+  if (keys["arrowup"]||keys["w"]) rocket.ty -= sp*dt;
+  if (keys["arrowdown"]||keys["s"]) rocket.ty += sp*dt;
+  rocket.tx = Math.max(30, Math.min(W*0.6, rocket.tx));
+  rocket.ty = Math.max(30, Math.min(H-30, rocket.ty));
+  const k = 1 - Math.pow(0.0005, dt);
+  rocket.x += (rocket.tx - rocket.x) * k;
+  rocket.y += (rocket.ty - rocket.y) * k;
+
+  flight.t += dt;
+  flight.hitCd = Math.max(0, flight.hitCd - dt);
+  const diff = flight.steps;
+  flight.spawn -= dt;
+  if (flight.spawn <= 0) {
+    flight.spawn = Math.max(0.4, 0.95 - diff*0.05) * (0.7 + Math.random()*0.6);
+    const r = 14 + Math.random()*20;
+    flight.objs.push({ kind:"rock", x:W+r, y:30+Math.random()*(H-60), r, vx:-(200 + diff*18 + Math.random()*90), rot:Math.random()*6 });
+  }
+  flight.starT -= dt;
+  if (flight.starT <= 0) {
+    flight.starT = 1.4 + Math.random();
+    flight.objs.push({ kind:"star", x:W+20, y:40+Math.random()*(H-80), r:14, vx:-220, rot:0 });
+  }
+  for (const o of flight.objs) {
+    o.x += o.vx*dt; o.rot += dt;
+    if (o.dead) continue;
+    const d = Math.hypot(o.x - rocket.x, o.y - rocket.y);
+    if (o.kind === "star" && d < o.r + 18) { o.dead = true; score += 10; renderHud(); }
+    if (o.kind === "rock" && d < o.r + 12 && flight.hitCd === 0) {
+      o.dead = true; flight.hitCd = 1.2; fuel--; renderHud();
+      cv.style.transform = "translateX(4px)"; setTimeout(() => cv.style.transform = "", 80);
+      if (fuel <= 0) { fuel = 0; renderHud(); rescue(); return; }
+    }
+  }
+  flight.objs = flight.objs.filter(o => !o.dead && o.x > -60);
+  if (flight.t >= flight.dur) land();
+}
+
+// ---------- draw ----------
+function drawPlanet(p, cx, cy, r) {
+  const g = ctx.createRadialGradient(cx - r*0.35, cy - r*0.35, r*0.1, cx, cy, r);
+  g.addColorStop(0, "#fff8"); g.addColorStop(0.12, p.color); g.addColorStop(1, "#0006");
+  if (p.ring) { ctx.strokeStyle = "#d9c38a"; ctx.lineWidth = r*0.12; ctx.beginPath(); ctx.ellipse(cx, cy, r*1.7, r*0.4, -0.25, Math.PI, Math.PI*2); ctx.stroke(); }
+  ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  if (p.ring) { ctx.strokeStyle = "#d9c38a"; ctx.lineWidth = r*0.12; ctx.beginPath(); ctx.ellipse(cx, cy, r*1.7, r*0.4, -0.25, 0, Math.PI); ctx.stroke(); }
+}
+function drawRocket(x, y, blink, flame) {
+  if (blink && Math.floor(performance.now()/90) % 2) return;
+  ctx.save(); ctx.translate(x, y);
+  if (flame) { ctx.fillStyle = "#ffb347"; ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(-34 - Math.random()*10, -5); ctx.lineTo(-34 - Math.random()*10, 5); ctx.fill(); }
+  ctx.rotate(Math.PI/4); ctx.font = "38px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🚀", 0, 0);
+  ctx.restore();
+}
+function draw() {
+  ctx.fillStyle = "#050818"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#fff";
+  bgStars.forEach(s => { ctx.globalAlpha = 0.35 + s.z/3; ctx.fillRect(s.x, s.y, s.z, s.z); });
+  ctx.globalAlpha = 1;
+
+  if (mode !== "flight") {
+    drawPlanet(PLANETS[here], 150, H + 120, 330);
+    const bob = Math.sin(performance.now()/500) * 4;
+    drawRocket(250, 120 + bob, false, false);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 20px Trebuchet MS"; ctx.textAlign = "left";
+    ctx.fillText(`You are on ${PLANETS[here].id}`, 330, 60);
+    ctx.fillStyle = "#9aa5d6"; ctx.font = "16px Trebuchet MS";
+    ctx.fillText("Pick a planet above to hop to it", 330, 88);
+    return;
+  }
+  const f = flight, prog = Math.min(1, f.t / f.dur);
+  // destination grows ahead
+  const dp = PLANETS[f.dest];
+  drawPlanet(dp, W + 100 - 330*prog*prog, H/2, 24 + 210*prog*prog);
+  // progress bar
+  ctx.fillStyle = "#ffffff22"; ctx.fillRect(20, 14, W-40, 8);
+  ctx.fillStyle = "#ffd54a"; ctx.fillRect(20, 14, (W-40)*prog, 8);
+  ctx.font = "14px Trebuchet MS"; ctx.fillStyle = "#fff"; ctx.textAlign = "left";
+  ctx.fillText(`${PLANETS[here].id} → ${dp.id}`, 20, 40);
+  // objects
+  for (const o of f.objs) {
+    if (o.kind === "star") { ctx.font = "28px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⭐", o.x, o.y); }
+    else {
+      ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot);
+      ctx.fillStyle = "#8b8579"; ctx.beginPath();
+      for (let i=0;i<9;i++) { const a = i/9*Math.PI*2, rr = o.r*(0.82 + 0.18*Math.sin(i*2.7+o.r)); ctx[i?"lineTo":"moveTo"](Math.cos(a)*rr, Math.sin(a)*rr); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#6c675d"; ctx.beginPath(); ctx.arc(-o.r*0.25, -o.r*0.2, o.r*0.25, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(o.r*0.3, o.r*0.25, o.r*0.15, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+  }
+  drawRocket(rocket.x, rocket.y, f.hitCd > 0, true);
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+
+// ---------- data loading + custom questions ----------
+const CUSTOM_KEY = "ph-custom";
+function loadCustom() {
+  try { const s = JSON.parse(localStorage.getItem(CUSTOM_KEY)); if (Array.isArray(s)) return s; } catch(e) {}
+  return [];
+}
+function saveCustom(list) { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); return true; } catch(e) { return false; } }
+function rebuildPools() {
+  const cust = loadCustom();
+  GENERAL = BASE.general.concat(cust.filter(c => !c.dest));
+  PLANETS.forEach(p => { p.qs = (BASE.destinations[p.id] || []).concat(cust.filter(c => c.dest === p.id)); });
+}
+function checkQuestion(q) {
+  if (!q || typeof q.q !== "string" || !q.q.trim()) return "missing question text";
+  if (!Array.isArray(q.a) || q.a.length < 2) return "needs at least 2 answers";
+  if (new Set(q.a.map(x => String(x).trim().toLowerCase())).size !== q.a.length) return "duplicate answers";
+  return null;
+}
+async function loadData() {
+  const get = async url => { const r = await fetch(url); if (!r.ok) throw new Error(url + " (" + r.status + ")"); return r.json(); };
+  const [planets, questions] = await Promise.all([get("data/planets.json"), get("data/questions.json")]);
+  PLANETS = planets; BASE = questions;
+  const bonus = PLANETS.findIndex(p => p.bonus);
+  MAIN_COUNT = bonus < 0 ? PLANETS.length : bonus;
+  const all = BASE.general.map(q => ["general", q]);
+  Object.entries(BASE.destinations).forEach(([id, qs]) => qs.forEach(q => all.push([id, q])));
+  all.forEach(([where, q]) => { const bad = checkQuestion(q); if (bad) console.warn("Bad question in " + where + ": " + bad, q); });
+  Object.keys(BASE.destinations).forEach(id => { if (!PLANETS.some(p => p.id === id)) console.warn("questions.json has questions for unknown destination: " + id); });
+}
+
+function showEditor(msg) {
+  if (mode !== "idle") return;
+  const custom = loadCustom();
+  showBox(`<h2>✏️ My questions</h2>
+    <p class="muted">Write your own question! It will pop up while refuelling, mixed in with the others.</p>
+    <input class="fld" id="eq" maxlength="200" placeholder="Your question">
+    <input class="fld" id="ea" maxlength="80" placeholder="✅ The right answer">
+    <input class="fld" id="ew1" maxlength="80" placeholder="❌ A wrong answer">
+    <input class="fld" id="ew2" maxlength="80" placeholder="❌ Another wrong answer (optional)">
+    <input class="fld" id="ew3" maxlength="80" placeholder="❌ One more wrong answer (optional)">
+    <input class="fld" id="ee" maxlength="200" placeholder="Fun fact to show after answering (optional)">
+    <select class="fld" id="ed"><option value="">Ask it on any trip</option>${PLANETS.map(p => `<option value="${esc(p.id)}">Only when going to ${esc(p.id)}</option>`).join("")}</select>
+    <div id="emsg" class="muted" style="min-height:22px">${msg || ""}</div>
+    <button class="go" id="eadd">Add question</button> <button class="go" id="eclose" style="background:#2a3470;color:#fff">Close</button>
+    ${custom.length ? `<h2 style="margin-top:16px">My ${custom.length} question${custom.length > 1 ? "s" : ""}</h2>
+      <ul class="qlist">${custom.map((c, i) => `<li><span>${esc(c.q)} <i class="muted">→ ${esc(c.a[0])}</i></span><button class="mini" data-del="${i}">🗑️</button></li>`).join("")}</ul>
+      <button class="mini" id="eexp" style="margin-top:8px">⬇️ Download as JSON</button>` : ""}`);
+  $("eclose").onclick = hideBox;
+  $("eadd").onclick = () => {
+    const v = id => $(id).value.trim();
+    const q = { q: v("eq"), a: [v("ea"), v("ew1"), v("ew2"), v("ew3")].filter(Boolean), e: v("ee") };
+    if ($("ed").value) q.dest = $("ed").value;
+    const bad = checkQuestion(q);
+    if (!v("ea")) return showEditor("Add the right answer first.");
+    if (bad) return showEditor("Hmm: " + (bad === "needs at least 2 answers" ? "add at least one wrong answer too." : bad === "duplicate answers" ? "every answer should be different." : "write the question first.") );
+    const list = loadCustom(); list.push(q);
+    showEditor(saveCustom(list) ? "✅ Added! It will show up on your next trip." : "Couldn't save in this browser.");
+    rebuildPools();
+  };
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const list = loadCustom(); list.splice(+b.dataset.del, 1); saveCustom(list); rebuildPools(); showEditor("Deleted."); });
+  if ($("eexp")) $("eexp").onclick = () => {
+    const out = { general:[], destinations:{} };
+    loadCustom().forEach(c => { const item = { q:c.q, a:c.a, e:c.e || "" }; if (c.dest) (out.destinations[c.dest] = out.destinations[c.dest] || []).push(item); else out.general.push(item); });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type:"application/json" }));
+    a.download = "my-questions.json"; a.click(); URL.revokeObjectURL(a.href);
+  };
+}
+$("myq").onclick = () => showEditor();
+
+loadData().then(() => {
+  rebuildPools(); renderHud(); renderMap(); renderLog();
+  requestAnimationFrame(frame);
+}).catch(err => {
+  console.error(err);
+  showBox(`<h2>😕 Couldn't load the game data</h2>
+    <p>${esc(err.message)}</p>
+    <p class="muted">If you opened <code>index.html</code> by double-clicking it, browsers block loading the data files. Start a small local server instead:</p>
+    <pre style="background:#0b1030;padding:8px;border-radius:8px">python3 -m http.server 8792</pre>
+    <p class="muted">Then open http://localhost:8792, or play the online version.</p>`);
+});
+</script>
+</body>
+</html>
